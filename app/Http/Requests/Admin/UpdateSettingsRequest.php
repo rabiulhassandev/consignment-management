@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Requests\Admin;
+
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+
+class UpdateSettingsRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()->can('settings.manage');
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        return [
+            'site_name' => ['required', 'string', 'max:255'],
+            'site_email' => ['nullable', 'string', 'email', 'max:255'],
+            'site_phone' => ['nullable', 'string', 'max:50'],
+            'site_address' => ['nullable', 'string', 'max:500'],
+            'site_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+        ];
+    }
+}
