@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class CustomerManagementTest extends TestCase
@@ -67,6 +68,62 @@ class CustomerManagementTest extends TestCase
 
         $response->assertRedirect(route('admin.customers.show', $customer));
         $this->assertSame('Updated Name', $customer->refresh()->name);
+    }
+
+    public function test_staff_with_permission_can_change_customer_password(): void
+    {
+        $staff = $this->createStaffUser('customers.edit');
+        $customer = User::factory()->customer()->create();
+
+        $response = $this->actingAs($staff)->patch(route('admin.customers.password.update', $customer), [
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'new-secret-password',
+        ]);
+
+        $response->assertRedirect(route('admin.customers.show', $customer));
+        $this->assertTrue(Hash::check('new-secret-password', $customer->refresh()->password));
+    }
+
+    public function test_password_change_requires_confirmation(): void
+    {
+        $staff = $this->createStaffUser('customers.edit');
+        $customer = User::factory()->customer()->create();
+
+        $response = $this->actingAs($staff)->patch(route('admin.customers.password.update', $customer), [
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'different-password',
+        ]);
+
+        $response->assertSessionHasErrors('password');
+        $this->assertTrue(Hash::check('password', $customer->refresh()->password));
+    }
+
+    public function test_staff_without_permission_cannot_change_customer_password(): void
+    {
+        $staff = $this->createStaffUser('customers.view');
+        $customer = User::factory()->customer()->create();
+
+        $this->actingAs($staff)
+            ->patch(route('admin.customers.password.update', $customer), [
+                'password' => 'new-secret-password',
+                'password_confirmation' => 'new-secret-password',
+            ])
+            ->assertForbidden();
+
+        $this->assertTrue(Hash::check('password', $customer->refresh()->password));
+    }
+
+    public function test_password_change_route_rejects_non_customer_users(): void
+    {
+        $staff = $this->createStaffUser('customers.edit');
+        $otherStaff = User::factory()->create();
+
+        $this->actingAs($staff)
+            ->patch(route('admin.customers.password.update', $otherStaff), [
+                'password' => 'new-secret-password',
+                'password_confirmation' => 'new-secret-password',
+            ])
+            ->assertNotFound();
     }
 
     public function test_staff_can_approve_pending_customer(): void

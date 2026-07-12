@@ -34,6 +34,9 @@
             @endif
             @can('customers.edit')
                 <x-button variant="secondary" :href="route('admin.customers.edit', $customer)" icon="pencil">Edit</x-button>
+                <x-button variant="secondary" icon="shield" x-data @click="$dispatch('open-modal', 'change-password')">
+                    Change Password
+                </x-button>
             @endcan
             @can('consignments.create')
                 @if (Route::has('admin.customers.consignments.create'))
@@ -45,9 +48,9 @@
 
     {{-- Stats --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <x-stat-card label="Suppliers" :value="$customer->suppliers_count" icon="truck" />
-        <x-stat-card label="Consignments" :value="$customer->consignments_count" icon="cube" />
-        <x-stat-card label="Purchase Items" :value="$purchaseItemsCount" icon="document" />
+        <x-stat-card label="Suppliers" :value="$customer->suppliers_count" icon="truck" color="sky" />
+        <x-stat-card label="Consignments" :value="$customer->consignments_count" icon="cube" color="indigo" />
+        <x-stat-card label="Purchase Items" :value="$purchaseItemsCount" icon="document" color="emerald" />
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -88,7 +91,7 @@
                 @else
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead>
+                            <thead class="bg-gray-50/75">
                                 <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                                     <th class="px-4 py-3 sm:px-6">Name</th>
                                     <th class="px-4 py-3">Category</th>
@@ -154,7 +157,7 @@
                 @else
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
-                            <thead>
+                            <thead class="bg-gray-50/75">
                                 <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                                     <th class="px-4 py-3 sm:px-6">Consignment No</th>
                                     <th class="px-4 py-3">Date</th>
@@ -205,6 +208,30 @@
                 @endif
             </x-card>
         </div>
+    @endcan
+
+    {{-- Change password modal --}}
+    @can('customers.edit')
+        <x-modal name="change-password" title="Change Password" max-width="md">
+            <form method="POST" action="{{ route('admin.customers.password.update', $customer) }}" class="space-y-4">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="_modal" value="change-password">
+
+                <p class="text-sm text-gray-500">
+                    Set a new password for <span class="font-medium text-gray-900">{{ $customer->name }}</span>.
+                    They will be logged out of any active sessions.
+                </p>
+
+                <x-form.input name="password" id="change-password-new" type="password" label="New password" required autocomplete="new-password" />
+                <x-form.input name="password_confirmation" id="change-password-confirm" type="password" label="Confirm new password" required autocomplete="new-password" />
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <x-button variant="secondary" @click="show = false">Cancel</x-button>
+                    <x-button type="submit">Change Password</x-button>
+                </div>
+            </form>
+        </x-modal>
     @endcan
 
     {{-- Supplier modals --}}

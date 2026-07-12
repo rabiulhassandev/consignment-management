@@ -9,11 +9,11 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased">
-    <header class="sticky top-0 z-20 border-b border-gray-200 bg-white">
+<body class="flex min-h-screen flex-col bg-gray-50 font-sans text-gray-900 antialiased">
+    <header class="sticky top-0 z-20 border-b border-gray-200/75 bg-white/80 backdrop-blur-md">
         <div class="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-            <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2">
-                <span class="flex size-9 items-center justify-center rounded-lg bg-indigo-600 text-base font-bold text-white">
+            <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2.5">
+                <span class="flex size-9 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-violet-600 text-base font-bold text-white shadow-sm">
                     {{ str($siteName)->substr(0, 1)->upper() }}
                 </span>
                 <span class="hidden truncate text-base font-semibold tracking-tight text-gray-900 sm:block">{{ $siteName }}</span>
@@ -41,7 +41,7 @@
                 </button>
 
                 <div x-cloak x-show="open" x-transition @click.outside="open = false"
-                     class="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                     class="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200/75 bg-white shadow-lg shadow-gray-900/5">
                     <div class="border-b border-gray-100 px-4 py-3">
                         <p class="truncate text-sm font-semibold text-gray-900">{{ auth()->user()->name }}</p>
                         <p class="truncate text-xs text-gray-500">{{ auth()->user()->email }}</p>
@@ -58,9 +58,13 @@
         </div>
     </header>
 
-    <main class="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+    <main class="mx-auto w-full max-w-6xl flex-1 p-4 sm:p-6 lg:p-8">
         <x-flash />
         {{ $slot }}
     </main>
+
+    <footer class="border-t border-gray-200/75 py-4">
+        <p class="text-center text-xs text-gray-400">&copy; {{ now()->year }} {{ $siteName }}. All rights reserved.</p>
+    </footer>
 </body>
 </html>

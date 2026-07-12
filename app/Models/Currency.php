@@ -37,6 +37,21 @@ class Currency extends Model
         return $this->hasMany(Consignment::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function lcBills(): HasMany
+    {
+        return $this->hasMany(LcBill::class);
+    }
+
+    public function ttAccounts(): HasMany
+    {
+        return $this->hasMany(TtAccount::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

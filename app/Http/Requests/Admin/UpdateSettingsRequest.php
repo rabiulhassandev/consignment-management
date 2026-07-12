@@ -28,6 +28,17 @@ class UpdateSettingsRequest extends FormRequest
             'site_phone' => ['nullable', 'string', 'max:50'],
             'site_address' => ['nullable', 'string', 'max:500'],
             'site_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'company_name' => ['nullable', 'string', 'max:255'],
+            'company_tagline' => ['nullable', 'string', 'max:255'],
+            'china_office_address' => ['nullable', 'string', 'max:500'],
+            'china_office_contact' => ['nullable', 'string', 'max:255'],
+            'dhaka_office_address' => ['nullable', 'string', 'max:500'],
+            'dhaka_office_contact' => ['nullable', 'string', 'max:255'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'invoice_footer_note' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

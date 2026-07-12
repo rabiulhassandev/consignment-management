@@ -46,6 +46,16 @@ class User extends Authenticatable
         return $this->hasMany(Consignment::class, 'customer_id');
     }
 
+    public function lcBills(): HasMany
+    {
+        return $this->hasMany(LcBill::class, 'customer_id');
+    }
+
+    public function ttAccounts(): HasMany
+    {
+        return $this->hasMany(TtAccount::class, 'customer_id');
+    }
+
     public function isStaff(): bool
     {
         return $this->type === UserType::Staff;

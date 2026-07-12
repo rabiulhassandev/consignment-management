@@ -1,12 +1,12 @@
 <x-portal-layout title="Dashboard">
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Welcome, {{ $customer->name }}</h1>
-        <p class="mt-1 text-sm text-gray-500">Here is an overview of your consignments.</p>
+    <div class="mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-indigo-600 via-indigo-600 to-violet-700 p-6 shadow-lg shadow-indigo-600/20 sm:p-8">
+        <h1 class="text-2xl font-semibold tracking-tight text-white">Welcome back, {{ $customer->name }}</h1>
+        <p class="mt-1 text-sm text-indigo-100">Here is an overview of your consignments and purchases.</p>
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <x-stat-card label="My Consignments" :value="$totalConsignments" icon="cube" />
-        <x-stat-card label="Total Purchase Items" :value="$totalItems" icon="document" />
+        <x-stat-card label="My Consignments" :value="$totalConsignments" icon="cube" color="indigo" />
+        <x-stat-card label="Total Purchase Items" :value="$totalItems" icon="document" color="emerald" />
     </div>
 
     <div class="mt-6">

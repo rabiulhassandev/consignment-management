@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateCustomerPasswordRequest;
 use App\Http\Requests\Admin\UpdateCustomerRequest;
 use App\Models\Category;
 use App\Models\PurchaseItem;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -88,6 +90,24 @@ class CustomerController extends Controller
         return redirect()
             ->route('admin.customers.show', $customer)
             ->with('success', 'Customer updated successfully.');
+    }
+
+    /**
+     * Change a customer's password and end their active sessions.
+     */
+    public function updatePassword(UpdateCustomerPasswordRequest $request, User $customer): RedirectResponse
+    {
+        abort_unless($customer->isCustomer(), 404);
+
+        $customer->update(['password' => $request->validated('password')]);
+
+        DB::table(config('session.table', 'sessions'))
+            ->where('user_id', $customer->id)
+            ->delete();
+
+        return redirect()
+            ->route('admin.customers.show', $customer)
+            ->with('success', "Password for {$customer->name} has been changed.");
     }
 
     /**

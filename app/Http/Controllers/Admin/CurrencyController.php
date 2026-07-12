@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreCurrencyRequest;
 use App\Http\Requests\Admin\UpdateCurrencyRequest;
 use App\Models\Currency;
+use App\Models\TtAccountEntry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -56,8 +57,14 @@ class CurrencyController extends Controller
      */
     public function destroy(Currency $currency): RedirectResponse
     {
-        if ($currency->consignments()->exists()) {
-            return back()->with('error', 'This currency is used by consignments and cannot be deleted.');
+        $inUse = $currency->consignments()->exists()
+            || $currency->invoices()->exists()
+            || $currency->lcBills()->exists()
+            || $currency->ttAccounts()->exists()
+            || TtAccountEntry::where('source_currency_id', $currency->id)->exists();
+
+        if ($inUse) {
+            return back()->with('error', 'This currency is in use and cannot be deleted.');
         }
 
         $currency->delete();

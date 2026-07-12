@@ -5,10 +5,10 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <x-stat-card label="Total Customers" :value="$totalCustomers" icon="users" />
-        <x-stat-card label="Pending Approvals" :value="$pendingCustomers" icon="bell" />
-        <x-stat-card label="Suppliers" :value="$totalSuppliers" icon="truck" />
-        <x-stat-card label="Consignments" :value="$totalConsignments" icon="cube" />
+        <x-stat-card label="Total Customers" :value="$totalCustomers" icon="users" color="indigo" />
+        <x-stat-card label="Pending Approvals" :value="$pendingCustomers" icon="bell" color="amber" />
+        <x-stat-card label="Suppliers" :value="$totalSuppliers" icon="truck" color="sky" />
+        <x-stat-card label="Consignments" :value="$totalConsignments" icon="cube" color="emerald" />
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">

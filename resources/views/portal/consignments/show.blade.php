@@ -11,8 +11,8 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <x-stat-card label="Purchase Items" :value="$consignment->items->count()" icon="document" />
-        <x-stat-card label="Total Amount" :value="$consignment->currency->symbol.number_format((float) $totalAmount, 2)" icon="currency" />
+        <x-stat-card label="Purchase Items" :value="$consignment->items->count()" icon="document" color="indigo" />
+        <x-stat-card label="Total Amount" :value="$consignment->currency->symbol.number_format((float) $totalAmount, 2)" icon="currency" color="emerald" />
     </div>
 
     <div class="mt-6">
@@ -22,7 +22,7 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead>
+                        <thead class="bg-gray-50/75">
                             <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                                 <th class="px-4 py-3 sm:px-6">#</th>
                                 <th class="px-4 py-3">Date</th>

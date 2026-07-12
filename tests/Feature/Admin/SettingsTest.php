@@ -19,11 +19,16 @@ class SettingsTest extends TestCase
             'site_email' => 'info@bnoorgroup.com',
             'site_phone' => '01700000000',
             'site_address' => 'Dhaka, Bangladesh',
+            'company_name' => 'Guangzhou Bnoor Global Trading Company Limited',
+            'bank_name' => 'The City Bank Limited',
+            'bank_account_number' => '1504311841001',
         ]);
 
         $response->assertRedirect(route('admin.settings.edit'));
         $this->assertSame('BNoor Group', Setting::get('site_name'));
         $this->assertSame('info@bnoorgroup.com', Setting::get('site_email'));
+        $this->assertSame('Guangzhou Bnoor Global Trading Company Limited', Setting::get('company_name'));
+        $this->assertSame('1504311841001', Setting::get('bank_account_number'));
     }
 
     public function test_site_name_is_required(): void

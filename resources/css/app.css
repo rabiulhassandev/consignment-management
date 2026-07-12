@@ -11,3 +11,7 @@
 [x-cloak] {
     display: none !important;
 }
+
+::selection {
+    background-color: --alpha(var(--color-indigo-600) / 15%);
+}

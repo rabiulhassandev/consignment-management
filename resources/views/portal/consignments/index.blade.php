@@ -11,7 +11,7 @@
         @else
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead>
+                    <thead class="bg-gray-50/75">
                         <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                             <th class="px-4 py-3 sm:px-6">Consignment No</th>
                             <th class="px-4 py-3">Date</th>

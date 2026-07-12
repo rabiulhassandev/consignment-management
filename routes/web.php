@@ -45,6 +45,8 @@ Route::middleware(['auth', 'approved', 'staff'])
         Route::middleware('permission:customers.edit')->group(function () {
             Route::get('customers/{customer}/edit', [Admin\CustomerController::class, 'edit'])->name('customers.edit');
             Route::put('customers/{customer}', [Admin\CustomerController::class, 'update'])->name('customers.update');
+            Route::patch('customers/{customer}/password', [Admin\CustomerController::class, 'updatePassword'])
+                ->name('customers.password.update');
         });
 
         Route::middleware('permission:customers.approve')->group(function () {
@@ -100,6 +102,88 @@ Route::middleware(['auth', 'approved', 'staff'])
         Route::delete('consignments/{consignment}', [Admin\ConsignmentController::class, 'destroy'])
             ->middleware('permission:consignments.delete')
             ->name('consignments.destroy');
+
+        Route::middleware('permission:invoices.view')->group(function () {
+            Route::get('invoices', [Admin\InvoiceController::class, 'index'])->name('invoices.index');
+            Route::get('invoices/{invoice}', [Admin\InvoiceController::class, 'show'])
+                ->whereNumber('invoice')
+                ->name('invoices.show');
+            Route::get('invoices/{invoice}/print', [Admin\InvoiceController::class, 'print'])
+                ->whereNumber('invoice')
+                ->name('invoices.print');
+        });
+
+        Route::middleware('permission:invoices.create')->group(function () {
+            Route::get('invoices/create', [Admin\InvoiceController::class, 'create'])->name('invoices.create');
+            Route::post('invoices', [Admin\InvoiceController::class, 'store'])->name('invoices.store');
+        });
+
+        Route::middleware('permission:invoices.edit')->group(function () {
+            Route::get('invoices/{invoice}/edit', [Admin\InvoiceController::class, 'edit'])->name('invoices.edit');
+            Route::put('invoices/{invoice}', [Admin\InvoiceController::class, 'update'])->name('invoices.update');
+        });
+
+        Route::delete('invoices/{invoice}', [Admin\InvoiceController::class, 'destroy'])
+            ->middleware('permission:invoices.delete')
+            ->name('invoices.destroy');
+
+        Route::middleware('permission:lc-bills.view')->group(function () {
+            Route::get('lc-bills', [Admin\LcBillController::class, 'index'])->name('lc-bills.index');
+            Route::get('lc-bills/{lcBill}', [Admin\LcBillController::class, 'show'])
+                ->whereNumber('lcBill')
+                ->name('lc-bills.show');
+            Route::get('lc-bills/{lcBill}/print', [Admin\LcBillController::class, 'print'])
+                ->whereNumber('lcBill')
+                ->name('lc-bills.print');
+        });
+
+        Route::middleware('permission:lc-bills.create')->group(function () {
+            Route::get('lc-bills/create', [Admin\LcBillController::class, 'create'])->name('lc-bills.create');
+            Route::post('lc-bills', [Admin\LcBillController::class, 'store'])->name('lc-bills.store');
+        });
+
+        Route::middleware('permission:lc-bills.edit')->group(function () {
+            Route::get('lc-bills/{lcBill}/edit', [Admin\LcBillController::class, 'edit'])->name('lc-bills.edit');
+            Route::put('lc-bills/{lcBill}', [Admin\LcBillController::class, 'update'])->name('lc-bills.update');
+        });
+
+        Route::delete('lc-bills/{lcBill}', [Admin\LcBillController::class, 'destroy'])
+            ->middleware('permission:lc-bills.delete')
+            ->name('lc-bills.destroy');
+
+        Route::middleware('permission:tt-accounts.view')->group(function () {
+            Route::get('tt-accounts', [Admin\TtAccountController::class, 'index'])->name('tt-accounts.index');
+            Route::get('tt-accounts/{ttAccount}', [Admin\TtAccountController::class, 'show'])
+                ->whereNumber('ttAccount')
+                ->name('tt-accounts.show');
+            Route::get('tt-accounts/{ttAccount}/print', [Admin\TtAccountController::class, 'print'])
+                ->whereNumber('ttAccount')
+                ->name('tt-accounts.print');
+        });
+
+        Route::middleware('permission:tt-accounts.create')->group(function () {
+            Route::get('tt-accounts/create', [Admin\TtAccountController::class, 'create'])->name('tt-accounts.create');
+            Route::post('tt-accounts', [Admin\TtAccountController::class, 'store'])->name('tt-accounts.store');
+        });
+
+        Route::middleware('permission:tt-accounts.edit')->group(function () {
+            Route::get('tt-accounts/{ttAccount}/edit', [Admin\TtAccountController::class, 'edit'])->name('tt-accounts.edit');
+            Route::put('tt-accounts/{ttAccount}', [Admin\TtAccountController::class, 'update'])->name('tt-accounts.update');
+
+            Route::post('tt-accounts/{ttAccount}/entries', [Admin\TtAccountEntryController::class, 'store'])
+                ->whereNumber('ttAccount')
+                ->name('tt-accounts.entries.store');
+            Route::put('tt-accounts/{ttAccount}/entries/{entry}', [Admin\TtAccountEntryController::class, 'update'])
+                ->scopeBindings()
+                ->name('tt-accounts.entries.update');
+            Route::delete('tt-accounts/{ttAccount}/entries/{entry}', [Admin\TtAccountEntryController::class, 'destroy'])
+                ->scopeBindings()
+                ->name('tt-accounts.entries.destroy');
+        });
+
+        Route::delete('tt-accounts/{ttAccount}', [Admin\TtAccountController::class, 'destroy'])
+            ->middleware('permission:tt-accounts.delete')
+            ->name('tt-accounts.destroy');
     });
 
 Route::middleware(['auth', 'approved', 'customer'])

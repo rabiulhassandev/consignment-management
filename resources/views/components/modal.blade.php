@@ -22,13 +22,13 @@
     role="dialog"
     aria-modal="true"
 >
-    <div x-show="show" x-transition.opacity class="fixed inset-0 bg-gray-900/50" @click="show = false"></div>
+    <div x-show="show" x-transition.opacity class="fixed inset-0 bg-gray-950/50 backdrop-blur-sm" @click="show = false"></div>
 
     <div class="flex min-h-full items-center justify-center p-4">
         <div
             x-show="show"
             x-transition
-            class="relative w-full {{ $maxWidthClass }} rounded-xl bg-white p-6 shadow-xl"
+            class="relative w-full {{ $maxWidthClass }} rounded-2xl bg-white p-6 shadow-xl ring-1 ring-gray-950/5"
             @click.stop
         >
             <div class="mb-4 flex items-center justify-between">

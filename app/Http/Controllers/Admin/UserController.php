@@ -127,6 +127,6 @@ class UserController extends Controller
     {
         return Permission::orderBy('name')
             ->get()
-            ->groupBy(fn (Permission $permission): string => str($permission->name)->before('.')->title()->toString());
+            ->groupBy(fn (Permission $permission): string => str($permission->name)->before('.')->headline()->toString());
     }
 }

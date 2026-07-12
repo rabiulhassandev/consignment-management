@@ -11,18 +11,42 @@ use Illuminate\View\View;
 class SettingController extends Controller
 {
     /**
+     * Optional text settings saved as-is (nullable strings).
+     *
+     * @var list<string>
+     */
+    private const OPTIONAL_KEYS = [
+        'site_email',
+        'site_phone',
+        'site_address',
+        'company_name',
+        'company_tagline',
+        'china_office_address',
+        'china_office_contact',
+        'dhaka_office_address',
+        'dhaka_office_contact',
+        'bank_name',
+        'bank_account_name',
+        'bank_account_number',
+        'bank_branch',
+        'invoice_footer_note',
+    ];
+
+    /**
      * Show the site settings form.
      */
     public function edit(): View
     {
+        $settings = ['site_name' => Setting::get('site_name', 'BNoor Group')];
+
+        foreach (self::OPTIONAL_KEYS as $key) {
+            $settings[$key] = Setting::get($key);
+        }
+
+        $settings['site_logo'] = Setting::get('site_logo');
+
         return view('admin.settings.edit', [
-            'settings' => [
-                'site_name' => Setting::get('site_name', 'BNoor Group'),
-                'site_email' => Setting::get('site_email'),
-                'site_phone' => Setting::get('site_phone'),
-                'site_address' => Setting::get('site_address'),
-                'site_logo' => Setting::get('site_logo'),
-            ],
+            'settings' => $settings,
         ]);
     }
 
@@ -34,9 +58,10 @@ class SettingController extends Controller
         $validated = $request->validated();
 
         Setting::set('site_name', $validated['site_name']);
-        Setting::set('site_email', $validated['site_email'] ?? null);
-        Setting::set('site_phone', $validated['site_phone'] ?? null);
-        Setting::set('site_address', $validated['site_address'] ?? null);
+
+        foreach (self::OPTIONAL_KEYS as $key) {
+            Setting::set($key, $validated[$key] ?? null);
+        }
 
         if ($request->hasFile('site_logo')) {
             Setting::set('site_logo', $request->file('site_logo')->store('logos', 'public'));
