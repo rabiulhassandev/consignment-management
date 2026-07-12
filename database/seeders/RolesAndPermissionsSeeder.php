@@ -23,6 +23,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Invoices' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete'],
         'LC Bills' => ['lc-bills.view', 'lc-bills.create', 'lc-bills.edit', 'lc-bills.delete'],
         'TT Accounts' => ['tt-accounts.view', 'tt-accounts.create', 'tt-accounts.edit', 'tt-accounts.delete'],
+        'Income & Expense' => ['transactions.view', 'transactions.create', 'transactions.edit', 'transactions.delete', 'transaction-categories.manage'],
         'Categories' => ['categories.manage'],
         'Currencies' => ['currencies.manage'],
         'Settings' => ['settings.manage'],

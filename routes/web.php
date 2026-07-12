@@ -184,6 +184,27 @@ Route::middleware(['auth', 'approved', 'staff'])
         Route::delete('tt-accounts/{ttAccount}', [Admin\TtAccountController::class, 'destroy'])
             ->middleware('permission:tt-accounts.delete')
             ->name('tt-accounts.destroy');
+
+        Route::middleware('permission:transactions.view')->group(function () {
+            Route::get('income-expense', [Admin\IncomeExpenseController::class, 'index'])->name('income-expense.index');
+            Route::get('income-expense/report', [Admin\IncomeExpenseController::class, 'report'])->name('income-expense.report');
+            Route::get('income-expense/report/print', [Admin\IncomeExpenseController::class, 'print'])->name('income-expense.report.print');
+            Route::get('transactions', [Admin\TransactionController::class, 'index'])->name('transactions.index');
+        });
+
+        Route::post('transactions', [Admin\TransactionController::class, 'store'])
+            ->middleware('permission:transactions.create')
+            ->name('transactions.store');
+        Route::put('transactions/{transaction}', [Admin\TransactionController::class, 'update'])
+            ->middleware('permission:transactions.edit')
+            ->name('transactions.update');
+        Route::delete('transactions/{transaction}', [Admin\TransactionController::class, 'destroy'])
+            ->middleware('permission:transactions.delete')
+            ->name('transactions.destroy');
+
+        Route::resource('transaction-categories', Admin\TransactionCategoryController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->middleware('permission:transaction-categories.manage');
     });
 
 Route::middleware(['auth', 'approved', 'customer'])

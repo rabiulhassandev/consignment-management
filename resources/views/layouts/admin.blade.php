@@ -94,6 +94,38 @@
                 @endcan
             @endcanany
 
+            @canany(['transactions.view', 'transaction-categories.manage'])
+                <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Finance</p>
+
+                @can('transactions.view')
+                    @if (Route::has('admin.income-expense.index'))
+                        <x-nav-item variant="dark" :href="route('admin.income-expense.index')" icon="wallet" :active="request()->routeIs('admin.income-expense.index')">
+                            Income &amp; Expense
+                        </x-nav-item>
+                    @endif
+
+                    @if (Route::has('admin.transactions.index'))
+                        <x-nav-item variant="dark" :href="route('admin.transactions.index')" icon="banknotes" :active="request()->routeIs('admin.transactions.*')">
+                            Transactions
+                        </x-nav-item>
+                    @endif
+
+                    @if (Route::has('admin.income-expense.report'))
+                        <x-nav-item variant="dark" :href="route('admin.income-expense.report')" icon="chart-bar" :active="request()->routeIs('admin.income-expense.report*')">
+                            Reports
+                        </x-nav-item>
+                    @endif
+                @endcan
+
+                @can('transaction-categories.manage')
+                    @if (Route::has('admin.transaction-categories.index'))
+                        <x-nav-item variant="dark" :href="route('admin.transaction-categories.index')" icon="tag" :active="request()->routeIs('admin.transaction-categories.*')">
+                            Categories
+                        </x-nav-item>
+                    @endif
+                @endcan
+            @endcanany
+
             @canany(['users.manage', 'roles.manage', 'settings.manage'])
                 <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Administration</p>
 

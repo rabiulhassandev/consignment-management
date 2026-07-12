@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\TransactionType;
 use App\Models\Category;
 use App\Models\Currency;
 use App\Models\Setting;
+use App\Models\TransactionCategory;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -45,6 +47,17 @@ class DatabaseSeeder extends Seeder
 
         foreach ($categories as $category) {
             Category::query()->firstOrCreate(['name' => $category]);
+        }
+
+        $transactionCategories = [
+            TransactionType::Income->value => ['Sales', 'Service', 'Commission', 'Other Income'],
+            TransactionType::Expense->value => ['Rent', 'Salaries', 'Utilities', 'Office Supplies', 'Transport', 'Other Expense'],
+        ];
+
+        foreach ($transactionCategories as $type => $names) {
+            foreach ($names as $name) {
+                TransactionCategory::query()->firstOrCreate(['type' => $type, 'name' => $name]);
+            }
         }
 
         $settings = [
