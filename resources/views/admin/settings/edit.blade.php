@@ -49,6 +49,9 @@
                                   :value="$settings['company_website']" placeholder="e.g. www.bnoorgroup.com" />
                 </div>
 
+                <x-form.input name="company_registration_no" label="Business registration no. (BIN / TIN)"
+                              :value="$settings['company_registration_no']" placeholder="Printed under the company name on every document" />
+
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <x-form.textarea name="china_office_address" label="China office address"
                                      :value="$settings['china_office_address']" rows="2" />
@@ -65,10 +68,28 @@
                     <x-form.input name="bank_account_name" label="Account name" :value="$settings['bank_account_name']" />
                     <x-form.input name="bank_account_number" label="Account number" :value="$settings['bank_account_number']" />
                     <x-form.input name="bank_branch" label="Branch" :value="$settings['bank_branch']" />
+                    <x-form.input name="bank_swift_code" label="SWIFT / BIC code"
+                                  :value="$settings['bank_swift_code']" placeholder="For incoming TT from abroad" />
+                    <x-form.input name="bank_routing_number" label="Routing number"
+                                  :value="$settings['bank_routing_number']" placeholder="For local BEFTN transfers" />
+                </div>
+
+                <x-form.input name="invoice_payment_terms" label="Payment terms"
+                              :value="$settings['invoice_payment_terms']" placeholder="e.g. Payment due within 15 days of invoice date" />
+
+                <x-form.textarea name="invoice_terms" label="Invoice terms &amp; conditions"
+                                 :value="$settings['invoice_terms']" rows="4"
+                                 placeholder="One condition per line. Shown above the signature on printed invoices." />
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <x-form.input name="invoice_signatory_name" label="Signatory name"
+                                  :value="$settings['invoice_signatory_name']" placeholder="Printed under the signature line" />
+                    <x-form.input name="invoice_signatory_designation" label="Signatory designation"
+                                  :value="$settings['invoice_signatory_designation']" placeholder="e.g. Managing Director" />
                 </div>
 
                 <x-form.input name="invoice_footer_note" label="Invoice footer note"
-                              :value="$settings['invoice_footer_note']" placeholder="Shown at the bottom of printed invoices" />
+                              :value="$settings['invoice_footer_note']" placeholder="Closing line at the very bottom of printed invoices" />
             </div>
         </x-card>
 

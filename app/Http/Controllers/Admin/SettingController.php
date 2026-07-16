@@ -22,6 +22,7 @@ class SettingController extends Controller
         'company_name',
         'company_tagline',
         'company_website',
+        'company_registration_no',
         'china_office_address',
         'china_office_contact',
         'dhaka_office_address',
@@ -30,6 +31,12 @@ class SettingController extends Controller
         'bank_account_name',
         'bank_account_number',
         'bank_branch',
+        'bank_swift_code',
+        'bank_routing_number',
+        'invoice_payment_terms',
+        'invoice_terms',
+        'invoice_signatory_name',
+        'invoice_signatory_designation',
         'invoice_footer_note',
     ];
 

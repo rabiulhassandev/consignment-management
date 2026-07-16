@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Currency;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Setting;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -171,6 +172,46 @@ class InvoiceManagementTest extends TestCase
             ->assertSee($invoice->invoice_no)
             ->assertSee($invoice->bill_to)
             ->assertSee($item->description);
+    }
+
+    public function test_invoice_print_page_renders_billing_document_settings(): void
+    {
+        $staff = $this->createStaffUser('invoices.view');
+        $invoice = InvoiceItem::factory()->create()->invoice;
+
+        Setting::set('company_registration_no', 'BIN 004561234-0101');
+        Setting::set('bank_swift_code', 'CIBLBDDH');
+        Setting::set('bank_routing_number', '225264535');
+        Setting::set('invoice_payment_terms', 'Payment due within 15 days of invoice date.');
+        Setting::set('invoice_terms', 'Goods once sold are not returnable.');
+        Setting::set('invoice_signatory_name', 'Mahbub Rahman');
+        Setting::set('invoice_signatory_designation', 'Managing Director');
+
+        $this->actingAs($staff)
+            ->get(route('admin.invoices.print', $invoice))
+            ->assertOk()
+            ->assertSee('BIN 004561234-0101')
+            ->assertSee('CIBLBDDH')
+            ->assertSee('225264535')
+            ->assertSee('Payment due within 15 days of invoice date.')
+            ->assertSee('Goods once sold are not returnable.')
+            ->assertSee('Mahbub Rahman')
+            ->assertSee('Managing Director')
+            ->assertDontSee('Authorized Signature');
+    }
+
+    public function test_invoice_print_page_omits_unset_billing_document_settings(): void
+    {
+        $staff = $this->createStaffUser('invoices.view');
+        $invoice = InvoiceItem::factory()->create()->invoice;
+
+        $this->actingAs($staff)
+            ->get(route('admin.invoices.print', $invoice))
+            ->assertOk()
+            ->assertSee('Authorized Signature')
+            ->assertDontSee('Terms &amp; Conditions')
+            ->assertDontSee('SWIFT / BIC')
+            ->assertDontSee('Reg. No.');
     }
 
     public function test_staff_without_permission_cannot_create_invoice(): void

@@ -31,6 +31,7 @@ class UpdateSettingsRequest extends FormRequest
             'company_name' => ['nullable', 'string', 'max:255'],
             'company_tagline' => ['nullable', 'string', 'max:255'],
             'company_website' => ['nullable', 'string', 'max:255'],
+            'company_registration_no' => ['nullable', 'string', 'max:100'],
             'china_office_address' => ['nullable', 'string', 'max:500'],
             'china_office_contact' => ['nullable', 'string', 'max:255'],
             'dhaka_office_address' => ['nullable', 'string', 'max:500'],
@@ -39,6 +40,12 @@ class UpdateSettingsRequest extends FormRequest
             'bank_account_name' => ['nullable', 'string', 'max:255'],
             'bank_account_number' => ['nullable', 'string', 'max:100'],
             'bank_branch' => ['nullable', 'string', 'max:255'],
+            'bank_swift_code' => ['nullable', 'string', 'max:50'],
+            'bank_routing_number' => ['nullable', 'string', 'max:50'],
+            'invoice_payment_terms' => ['nullable', 'string', 'max:255'],
+            'invoice_terms' => ['nullable', 'string', 'max:2000'],
+            'invoice_signatory_name' => ['nullable', 'string', 'max:255'],
+            'invoice_signatory_designation' => ['nullable', 'string', 'max:255'],
             'invoice_footer_note' => ['nullable', 'string', 'max:500'],
         ];
     }

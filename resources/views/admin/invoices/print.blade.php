@@ -4,8 +4,14 @@
     $bankAccountName = \App\Models\Setting::get('bank_account_name');
     $bankAccountNumber = \App\Models\Setting::get('bank_account_number');
     $bankBranch = \App\Models\Setting::get('bank_branch');
+    $bankSwiftCode = \App\Models\Setting::get('bank_swift_code');
+    $bankRoutingNumber = \App\Models\Setting::get('bank_routing_number');
+    $paymentTerms = \App\Models\Setting::get('invoice_payment_terms');
+    $terms = \App\Models\Setting::get('invoice_terms');
+    $signatoryName = \App\Models\Setting::get('invoice_signatory_name');
+    $signatoryDesignation = \App\Models\Setting::get('invoice_signatory_designation');
     $footerNote = \App\Models\Setting::get('invoice_footer_note');
-    $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch;
+    $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch || $bankSwiftCode || $bankRoutingNumber;
 @endphp
 
 <x-print-page :title="'Invoice '.$invoice->invoice_no" :back-url="route('admin.invoices.show', $invoice)" heading="Invoice">
@@ -71,11 +77,22 @@
             <p class="mt-2 text-right text-xs text-gray-400">
                 Amount in {{ $invoice->currency->name }} ({{ $invoice->currency->code }}) only
             </p>
+            @if ($paymentTerms)
+                <p class="mt-1 text-right text-xs font-medium text-slate-600">{{ $paymentTerms }}</p>
+            @endif
         </div>
     </div>
 
+    {{-- Terms & conditions --}}
+    @if ($terms)
+        <div class="mt-12 text-[13px] leading-relaxed text-gray-500">
+            <p class="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Terms &amp; Conditions</p>
+            <p class="whitespace-pre-line">{{ $terms }}</p>
+        </div>
+    @endif
+
     {{-- Payment details + signature --}}
-    <div class="mt-14 flex items-end justify-between gap-10 border-t border-gray-200 pt-7">
+    <div class="{{ $terms ? 'mt-8' : 'mt-14' }} flex items-end justify-between gap-10 border-t border-gray-200 pt-7">
         <div class="text-[13px] leading-loose text-gray-500">
             @if ($hasBankDetails)
                 <p class="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Payment Details</p>
@@ -91,11 +108,24 @@
                 @if ($bankBranch)
                     <p><span class="inline-block w-32">Branch</span><span class="font-medium text-slate-800">{{ $bankBranch }}</span></p>
                 @endif
+                @if ($bankSwiftCode)
+                    <p><span class="inline-block w-32">SWIFT / BIC</span><span class="font-medium tabular-nums text-slate-800">{{ $bankSwiftCode }}</span></p>
+                @endif
+                @if ($bankRoutingNumber)
+                    <p><span class="inline-block w-32">Routing No.</span><span class="font-medium tabular-nums text-slate-800">{{ $bankRoutingNumber }}</span></p>
+                @endif
             @endif
         </div>
         <div class="shrink-0 pb-1 text-center">
             <div class="w-64 border-t-2 border-slate-800"></div>
-            <p class="mt-2 text-base text-slate-800">Authorized Signature</p>
+            @if ($signatoryName)
+                <p class="mt-2 text-base font-semibold text-slate-800">{{ $signatoryName }}</p>
+                @if ($signatoryDesignation)
+                    <p class="mt-0.5 text-xs text-gray-500">{{ $signatoryDesignation }}</p>
+                @endif
+            @else
+                <p class="mt-2 text-base text-slate-800">Authorized Signature</p>
+            @endif
             <p class="mt-0.5 text-xs text-gray-400">For {{ $companyName }}</p>
         </div>
     </div>

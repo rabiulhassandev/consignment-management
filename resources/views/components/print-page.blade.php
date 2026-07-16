@@ -7,6 +7,7 @@
     $tagline = \App\Models\Setting::get('company_tagline');
     $logo = \App\Models\Setting::get('site_logo');
     $website = \App\Models\Setting::get('company_website');
+    $registrationNo = \App\Models\Setting::get('company_registration_no');
     $siteEmail = \App\Models\Setting::get('site_email');
     $chinaAddress = \App\Models\Setting::get('china_office_address');
     $chinaContact = \App\Models\Setting::get('china_office_contact');
@@ -68,6 +69,9 @@
             </div>
 
             <p class="mt-3 text-2xl font-extrabold uppercase leading-none tracking-tight text-gray-950">{{ $companyName }}</p>
+            @if ($registrationNo)
+                <p class="mt-1.5 text-[11px] uppercase tracking-[0.15em] text-gray-400">Reg. No. {{ $registrationNo }}</p>
+            @endif
 
             <div class="mt-4 border-t-2 border-slate-800"></div>
         </div>
