@@ -30,6 +30,7 @@ class UpdateSettingsRequest extends FormRequest
             'site_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'company_tagline' => ['nullable', 'string', 'max:255'],
+            'company_website' => ['nullable', 'string', 'max:255'],
             'china_office_address' => ['nullable', 'string', 'max:500'],
             'china_office_contact' => ['nullable', 'string', 'max:255'],
             'dhaka_office_address' => ['nullable', 'string', 'max:500'],

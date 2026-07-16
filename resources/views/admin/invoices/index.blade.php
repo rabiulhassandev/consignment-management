@@ -59,6 +59,9 @@
                                         <a href="{{ route('admin.invoices.print', $invoice) }}" target="_blank" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Print">
                                             <x-icon name="printer" class="size-4" />
                                         </a>
+                                        <a href="{{ route('admin.invoices.pdf', $invoice) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Download PDF">
+                                            <x-icon name="arrow-down-tray" class="size-4" />
+                                        </a>
                                         @can('invoices.edit')
                                             <a href="{{ route('admin.invoices.edit', $invoice) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Edit">
                                                 <x-icon name="pencil" class="size-4" />

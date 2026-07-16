@@ -7,8 +7,10 @@ use App\Http\Requests\Admin\StoreInvoiceRequest;
 use App\Http\Requests\Admin\UpdateInvoiceRequest;
 use App\Models\Currency;
 use App\Models\Invoice;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -154,6 +156,21 @@ class InvoiceController extends Controller
             'invoice' => $invoice,
             'totalAmount' => $invoice->items->sum('amount'),
         ]);
+    }
+
+    /**
+     * Download the invoice as a PDF document.
+     */
+    public function pdf(Invoice $invoice): Response
+    {
+        $invoice->load(['currency', 'items']);
+
+        $pdf = Pdf::loadView('admin.invoices.pdf', [
+            'invoice' => $invoice,
+            'totalAmount' => $invoice->items->sum('amount'),
+        ])->setPaper('a4');
+
+        return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
     }
 
     /**

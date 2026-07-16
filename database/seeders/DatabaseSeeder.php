@@ -63,6 +63,8 @@ class DatabaseSeeder extends Seeder
         $settings = [
             'company_name' => 'Guangzhou Bnoor Global Trading Company Limited',
             'company_tagline' => 'Global Sourcing & Freight Forwarding',
+            'company_website' => 'www.bnoorgroup.com',
+            'site_email' => 'bnoor00@hotmail.com',
             'china_office_address' => '广东省广州市黄埔区 - 九龙大道绿地·云创园，海丝知识中心T5栋1611房',
             'china_office_contact' => 'Mohammad Hozzatullah · +86 132 4735 7571',
             'dhaka_office_address' => 'House 14, Road 12, Sector 13, Uttara, Dhaka 1230, Bangladesh',

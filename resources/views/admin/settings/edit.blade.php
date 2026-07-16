@@ -41,8 +41,13 @@
             <div class="space-y-4">
                 <x-form.input name="company_name" label="Company name (on documents)"
                               :value="$settings['company_name']" placeholder="Full registered company name" />
-                <x-form.input name="company_tagline" label="Tagline"
-                              :value="$settings['company_tagline']" placeholder="e.g. Global Sourcing & Freight Forwarding" />
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <x-form.input name="company_tagline" label="Tagline"
+                                  :value="$settings['company_tagline']" placeholder="e.g. Global Sourcing & Freight Forwarding" />
+                    <x-form.input name="company_website" label="Website"
+                                  :value="$settings['company_website']" placeholder="e.g. www.bnoorgroup.com" />
+                </div>
 
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <x-form.textarea name="china_office_address" label="China office address"

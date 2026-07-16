@@ -1,4 +1,4 @@
-@props(['title' => null, 'backUrl' => null])
+@props(['title' => null, 'backUrl' => null, 'flush' => false])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -47,7 +47,7 @@
     </div>
 
     {{-- Document sheet --}}
-    <div class="mx-auto my-6 max-w-3xl bg-white p-10 shadow-sm print:my-0 print:max-w-none print:p-0 print:shadow-none">
+    <div class="mx-auto my-6 max-w-3xl bg-white shadow-sm print:my-0 print:max-w-none print:shadow-none {{ $flush ? 'overflow-hidden p-0' : 'p-10 print:p-0' }}">
         <div x-show="letterhead">
             @isset($letterhead)
                 {{ $letterhead }}

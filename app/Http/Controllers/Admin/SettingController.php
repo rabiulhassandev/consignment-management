@@ -21,6 +21,7 @@ class SettingController extends Controller
         'site_address',
         'company_name',
         'company_tagline',
+        'company_website',
         'china_office_address',
         'china_office_contact',
         'dhaka_office_address',

@@ -9,8 +9,10 @@ use App\Http\Requests\Admin\UpdateLcBillRequest;
 use App\Models\Currency;
 use App\Models\LcBill;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -159,6 +161,16 @@ class LcBillController extends Controller
     public function print(LcBill $lcBill): View
     {
         return view('admin.lc-bills.print', $this->billData($lcBill));
+    }
+
+    /**
+     * Download the LC bill as a PDF document.
+     */
+    public function pdf(LcBill $lcBill): Response
+    {
+        $pdf = Pdf::loadView('admin.lc-bills.pdf', $this->billData($lcBill))->setPaper('a4');
+
+        return $pdf->download("lc-bill-{$lcBill->bill_no}.pdf");
     }
 
     /**

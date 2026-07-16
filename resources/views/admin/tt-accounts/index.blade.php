@@ -78,6 +78,9 @@
                                         <a href="{{ route('admin.tt-accounts.print', $ttAccount) }}" target="_blank" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Print">
                                             <x-icon name="printer" class="size-4" />
                                         </a>
+                                        <a href="{{ route('admin.tt-accounts.pdf', $ttAccount) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Download PDF">
+                                            <x-icon name="arrow-down-tray" class="size-4" />
+                                        </a>
                                         @can('tt-accounts.edit')
                                             <a href="{{ route('admin.tt-accounts.edit', $ttAccount) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Edit">
                                                 <x-icon name="pencil" class="size-4" />

@@ -111,6 +111,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('invoices/{invoice}/print', [Admin\InvoiceController::class, 'print'])
                 ->whereNumber('invoice')
                 ->name('invoices.print');
+            Route::get('invoices/{invoice}/pdf', [Admin\InvoiceController::class, 'pdf'])
+                ->whereNumber('invoice')
+                ->name('invoices.pdf');
         });
 
         Route::middleware('permission:invoices.create')->group(function () {
@@ -135,6 +138,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('lc-bills/{lcBill}/print', [Admin\LcBillController::class, 'print'])
                 ->whereNumber('lcBill')
                 ->name('lc-bills.print');
+            Route::get('lc-bills/{lcBill}/pdf', [Admin\LcBillController::class, 'pdf'])
+                ->whereNumber('lcBill')
+                ->name('lc-bills.pdf');
         });
 
         Route::middleware('permission:lc-bills.create')->group(function () {
@@ -159,6 +165,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('tt-accounts/{ttAccount}/print', [Admin\TtAccountController::class, 'print'])
                 ->whereNumber('ttAccount')
                 ->name('tt-accounts.print');
+            Route::get('tt-accounts/{ttAccount}/pdf', [Admin\TtAccountController::class, 'pdf'])
+                ->whereNumber('ttAccount')
+                ->name('tt-accounts.pdf');
         });
 
         Route::middleware('permission:tt-accounts.create')->group(function () {

@@ -11,8 +11,10 @@ use App\Models\Currency;
 use App\Models\TtAccount;
 use App\Models\TtAccountEntry;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class TtAccountController extends Controller
@@ -119,6 +121,16 @@ class TtAccountController extends Controller
     public function print(TtAccount $ttAccount): View
     {
         return view('admin.tt-accounts.print', $this->statementData($ttAccount));
+    }
+
+    /**
+     * Download the TT account statement as a PDF document.
+     */
+    public function pdf(TtAccount $ttAccount): Response
+    {
+        $pdf = Pdf::loadView('admin.tt-accounts.pdf', $this->statementData($ttAccount))->setPaper('a4');
+
+        return $pdf->download("tt-account-{$ttAccount->id}.pdf");
     }
 
     /**
