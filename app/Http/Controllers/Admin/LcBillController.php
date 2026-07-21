@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ConversionOperation;
 use App\Enums\EntryType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreLcBillRequest;
@@ -180,7 +181,7 @@ class LcBillController extends Controller
      */
     private function billData(LcBill $lcBill): array
     {
-        $lcBill->load(['customer', 'currency', 'entries']);
+        $lcBill->load(['customer', 'currency', 'conversionCurrency', 'entries']);
 
         return [
             'lcBill' => $lcBill,
@@ -223,6 +224,7 @@ class LcBillController extends Controller
         return [
             'currencies' => Currency::active()->orderBy('code')->get(),
             'customers' => User::customers()->orderBy('name')->get(['id', 'name']),
+            'conversionOperations' => ConversionOperation::cases(),
         ];
     }
 

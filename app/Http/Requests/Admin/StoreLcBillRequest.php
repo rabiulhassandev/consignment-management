@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\ConversionOperation;
 use App\Enums\UserType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -15,6 +16,16 @@ class StoreLcBillRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()->can('lc-bills.create');
+    }
+
+    /**
+     * Fall back to multiplication when no conversion operation is submitted.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (blank($this->input('conversion_operation'))) {
+            $this->merge(['conversion_operation' => ConversionOperation::Multiply->value]);
+        }
     }
 
     /**
@@ -34,6 +45,8 @@ class StoreLcBillRequest extends FormRequest
             'shipment_title' => ['nullable', 'string', 'max:255'],
             'currency_id' => ['required', Rule::exists('currencies', 'id')->where('is_active', true)],
             'conversion_rate' => ['nullable', 'numeric', 'gt:0', 'max:999999'],
+            'conversion_currency_id' => ['nullable', 'required_with:conversion_rate', Rule::exists('currencies', 'id')->where('is_active', true)],
+            'conversion_operation' => ['required', Rule::enum(ConversionOperation::class)],
             'is_settled' => ['nullable', 'boolean'],
             'receipts' => ['nullable', 'array'],
             'receipts.*.entry_date' => ['nullable', 'date'],
@@ -59,6 +72,8 @@ class StoreLcBillRequest extends FormRequest
     {
         return [
             'customer_id' => 'customer',
+            'conversion_currency_id' => 'conversion currency',
+            'conversion_operation' => 'conversion operation',
             'receipts.*.entry_date' => 'date',
             'receipts.*.description' => 'description',
             'receipts.*.source_amount' => 'source amount',

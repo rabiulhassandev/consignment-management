@@ -127,14 +127,18 @@
                         <td class="muted uppercase" style="font-size: 10px; font-weight: bold; padding-top: 8px;">Balance</td>
                         <td class="right strong num" style="font-size: 15px; padding-top: 8px;">{{ number_format($balance, 2) }} {{ $code }}</td>
                     </tr>
-                    @if ($lcBill->conversion_rate !== null)
+                    @if ($localDue !== null)
                         <tr>
                             <td class="muted" style="padding-top: 4px;">Bank Rate</td>
-                            <td class="right num" style="padding-top: 4px;">{{ (float) $lcBill->conversion_rate }}</td>
+                            <td class="right num" style="padding-top: 4px;">
+                                {{ $lcBill->conversionOperation()->symbol() }} {{ (float) $lcBill->conversion_rate }}
+                            </td>
                         </tr>
                         <tr style="border-top: 1px solid #cbd5e1;">
-                            <td class="strong uppercase" style="font-size: 10px; padding-top: 8px;">{{ $lcBill->is_settled ? 'Settled' : 'Due' }}</td>
-                            <td class="right strong num" style="font-size: 20px; padding-top: 8px;"><span class="cjk">৳</span>{{ number_format($localDue, 2) }}</td>
+                            <td class="strong uppercase" style="font-size: 10px; padding-top: 8px;">
+                                {{ $lcBill->is_settled ? 'Settled' : 'Due' }} ({{ $lcBill->conversionCurrencyCode() }})
+                            </td>
+                            <td class="right strong num" style="font-size: 20px; padding-top: 8px;"><span class="cjk">{{ $lcBill->conversionCurrencySymbol() }}</span>{{ number_format($localDue, 2) }}</td>
                         </tr>
                     @endif
                 </table>

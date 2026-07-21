@@ -115,16 +115,20 @@
                     <dt class="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">Balance</dt>
                     <dd class="text-xl font-bold tabular-nums text-slate-900">{{ number_format($balance, 2) }} {{ $lcBill->currency->code }}</dd>
                 </div>
-                @if ($lcBill->conversion_rate !== null)
+                @if ($localDue !== null)
                     <div class="flex items-baseline justify-between pt-1">
                         <dt class="tracking-wide text-gray-400">Bank Rate</dt>
-                        <dd class="tabular-nums text-slate-800">{{ (float) $lcBill->conversion_rate }}</dd>
+                        <dd class="tabular-nums text-slate-800">
+                            {{ $lcBill->conversionOperation()->symbol() }} {{ (float) $lcBill->conversion_rate }}
+                        </dd>
                     </div>
                     <div class="flex items-baseline justify-between border-t border-gray-300 pt-3">
                         <dt class="text-xs font-bold uppercase tracking-[0.3em] text-slate-900">
-                            {{ $lcBill->is_settled ? 'Settled' : 'Due' }}
+                            {{ $lcBill->is_settled ? 'Settled' : 'Due' }} ({{ $lcBill->conversionCurrencyCode() }})
                         </dt>
-                        <dd class="text-3xl font-bold tabular-nums text-slate-900">৳{{ number_format($localDue, 2) }}</dd>
+                        <dd class="text-3xl font-bold tabular-nums text-slate-900">
+                            {{ $lcBill->conversionCurrencySymbol() }}{{ number_format($localDue, 2) }}
+                        </dd>
                     </div>
                 @endif
             </dl>

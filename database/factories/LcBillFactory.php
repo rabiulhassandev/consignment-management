@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ConversionOperation;
 use App\Models\Currency;
 use App\Models\LcBill;
 use App\Models\User;
@@ -29,8 +30,22 @@ class LcBillFactory extends Factory
             'shipment_title' => strtoupper(fake()->words(3, true)),
             'currency_id' => Currency::factory(),
             'conversion_rate' => null,
+            'conversion_currency_id' => null,
+            'conversion_operation' => ConversionOperation::Multiply,
             'is_settled' => false,
         ];
+    }
+
+    /**
+     * Convert the balance into the given currency at the given rate.
+     */
+    public function convertedTo(Currency $currency, string $rate, ConversionOperation $operation = ConversionOperation::Multiply): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'conversion_currency_id' => $currency->id,
+            'conversion_rate' => $rate,
+            'conversion_operation' => $operation,
+        ]);
     }
 
     /**

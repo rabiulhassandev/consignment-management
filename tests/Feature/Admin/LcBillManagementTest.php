@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ConversionOperation;
 use App\Enums\EntryType;
 use App\Models\Currency;
 use App\Models\LcBill;
@@ -26,6 +27,8 @@ class LcBillManagementTest extends TestCase
             'shipment_title' => '20 GP CONTAINER TO CHITTAGONG',
             'currency_id' => $currency->id,
             'conversion_rate' => '124',
+            'conversion_currency_id' => $currency->id,
+            'conversion_operation' => ConversionOperation::Multiply->value,
         ], $overrides);
     }
 
@@ -109,7 +112,8 @@ class LcBillManagementTest extends TestCase
     public function test_show_page_displays_totals_balance_and_due(): void
     {
         $staff = $this->createStaffUser('lc-bills.view');
-        $lcBill = LcBill::factory()->create(['conversion_rate' => '124']);
+        $taka = Currency::factory()->create(['code' => 'BDT', 'symbol' => '৳']);
+        $lcBill = LcBill::factory()->convertedTo($taka, '124')->create();
 
         LcBillEntry::factory()->received()->create(['lc_bill_id' => $lcBill->id, 'amount' => '8588.30']);
 
@@ -123,7 +127,72 @@ class LcBillManagementTest extends TestCase
             ->assertSee('8,588.30')
             ->assertSee('4,757.61')
             ->assertSee('3,830.69')
-            ->assertSee('475,005.56');
+            ->assertSee('475,005.56')
+            ->assertSee('Due (BDT)');
+    }
+
+    public function test_balance_is_divided_when_the_divide_operation_is_selected(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.create', 'lc-bills.view');
+        $customer = User::factory()->customer()->create();
+        $currency = Currency::factory()->create();
+        $settlementCurrency = Currency::factory()->create(['code' => 'CNY', 'symbol' => '¥']);
+
+        $this->actingAs($staff)->post(route('admin.lc-bills.store'), [
+            ...$this->billPayload($customer, $currency, [
+                'conversion_rate' => '6.7',
+                'conversion_currency_id' => $settlementCurrency->id,
+                'conversion_operation' => ConversionOperation::Divide->value,
+            ]),
+            'receipts' => [$this->entryPayload(['description' => 'CI value received', 'amount' => '1000'])],
+        ]);
+
+        $lcBill = LcBill::query()->where('bill_no', 'LCB-2604')->sole();
+
+        $this->assertSame(ConversionOperation::Divide, $lcBill->conversion_operation);
+        $this->assertSame($settlementCurrency->id, $lcBill->conversion_currency_id);
+        $this->assertSame(149.25, $lcBill->localDue());
+
+        $this->actingAs($staff)
+            ->get(route('admin.lc-bills.show', $lcBill))
+            ->assertOk()
+            ->assertSee('Due (CNY)')
+            ->assertSee('149.25');
+    }
+
+    public function test_conversion_currency_is_required_when_a_bank_rate_is_set(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.create');
+        $customer = User::factory()->customer()->create();
+        $currency = Currency::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.lc-bills.store'), [
+            ...$this->billPayload($customer, $currency, ['conversion_currency_id' => null]),
+            'payments' => [$this->entryPayload()],
+        ]);
+
+        $response->assertSessionHasErrors('conversion_currency_id');
+        $this->assertSame(0, LcBill::count());
+    }
+
+    public function test_bill_without_a_bank_rate_has_no_converted_due(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.create', 'lc-bills.view');
+        $customer = User::factory()->customer()->create();
+        $currency = Currency::factory()->create();
+
+        $this->actingAs($staff)->post(route('admin.lc-bills.store'), [
+            ...$this->billPayload($customer, $currency, [
+                'conversion_rate' => null,
+                'conversion_currency_id' => null,
+            ]),
+            'payments' => [$this->entryPayload()],
+        ]);
+
+        $lcBill = LcBill::query()->where('bill_no', 'LCB-2604')->sole();
+
+        $this->assertNull($lcBill->conversion_rate);
+        $this->assertNull($lcBill->load('entries')->localDue());
     }
 
     public function test_source_conversion_fields_are_stored(): void
@@ -204,6 +273,25 @@ class LcBillManagementTest extends TestCase
             ->assertSee($lcBill->bill_no)
             ->assertSee($lcBill->lc_number)
             ->assertSee($entry->description);
+    }
+
+    public function test_forms_render_the_conversion_controls(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.create', 'lc-bills.edit');
+        $taka = Currency::factory()->create(['code' => 'BDT', 'symbol' => '৳']);
+        $lcBill = LcBill::factory()->convertedTo($taka, '124', ConversionOperation::Divide)->create();
+
+        $this->actingAs($staff)
+            ->get(route('admin.lc-bills.create'))
+            ->assertOk()
+            ->assertSee('conversion_currency_id')
+            ->assertSee('conversion_operation')
+            ->assertSee('Bank rate');
+
+        $this->actingAs($staff)
+            ->get(route('admin.lc-bills.edit', $lcBill))
+            ->assertOk()
+            ->assertSee('value="divide" selected', false);
     }
 
     public function test_staff_without_permission_cannot_create_lc_bill(): void

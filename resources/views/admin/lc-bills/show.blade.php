@@ -38,7 +38,9 @@
         <x-stat-card label="Total Received" :value="$lcBill->currency->symbol.number_format($totalReceived, 2)" icon="banknotes" color="emerald" />
         <x-stat-card label="Total Paid" :value="$lcBill->currency->symbol.number_format($totalPaid, 2)" icon="banknotes" color="rose" />
         <x-stat-card label="Balance" :value="$lcBill->currency->symbol.number_format($balance, 2)" icon="currency" color="indigo" />
-        <x-stat-card label="Due (BDT)" :value="$localDue !== null ? '৳'.number_format($localDue, 2) : '—'" icon="currency" color="amber" />
+        <x-stat-card :label="'Due ('.$lcBill->conversionCurrencyCode().')'"
+                     :value="$localDue !== null ? $lcBill->conversionCurrencySymbol().number_format($localDue, 2) : '—'"
+                     icon="currency" color="amber" />
     </div>
 
     <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -165,12 +167,18 @@
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-gray-500">Bank rate</dt>
-                    <dd class="font-medium text-gray-900">{{ $lcBill->conversion_rate !== null ? (float) $lcBill->conversion_rate : '—' }}</dd>
+                    <dd class="font-medium text-gray-900">
+                        @if ($lcBill->conversion_rate !== null)
+                            {{ $lcBill->conversionOperation()->symbol() }} {{ (float) $lcBill->conversion_rate }}
+                        @else
+                            —
+                        @endif
+                    </dd>
                 </div>
                 <div class="flex justify-between border-t border-gray-100 pt-3">
-                    <dt class="font-semibold text-gray-700">Due (BDT)</dt>
+                    <dt class="font-semibold text-gray-700">Due ({{ $lcBill->conversionCurrencyCode() }})</dt>
                     <dd class="text-lg font-semibold {{ $localDue !== null && $localDue > 0 ? 'text-red-600' : 'text-gray-900' }}">
-                        {{ $localDue !== null ? '৳'.number_format($localDue, 2) : '—' }}
+                        {{ $localDue !== null ? $lcBill->conversionCurrencySymbol().number_format($localDue, 2) : '—' }}
                     </dd>
                 </div>
             </dl>
