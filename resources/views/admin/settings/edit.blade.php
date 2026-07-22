@@ -90,6 +90,10 @@
 
                 <x-form.input name="invoice_footer_note" label="Invoice footer note"
                               :value="$settings['invoice_footer_note']" placeholder="Closing line at the very bottom of printed invoices" />
+
+                <x-form.textarea name="sales_contract_terms" label="Sales contract terms &amp; conditions"
+                                 :value="$settings['sales_contract_terms']" rows="6"
+                                 placeholder="One condition per line. Prefilled into every new sales contract, where it stays editable." />
             </div>
         </x-card>
 

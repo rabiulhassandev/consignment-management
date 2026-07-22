@@ -21,6 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'Suppliers' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete'],
         'Consignments' => ['consignments.view', 'consignments.create', 'consignments.edit', 'consignments.delete'],
         'Invoices' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete'],
+        'Sales Contracts' => ['sales-contracts.view', 'sales-contracts.create', 'sales-contracts.edit', 'sales-contracts.delete'],
         'LC Bills' => ['lc-bills.view', 'lc-bills.create', 'lc-bills.edit', 'lc-bills.delete'],
         'TT Accounts' => ['tt-accounts.view', 'tt-accounts.create', 'tt-accounts.edit', 'tt-accounts.delete'],
         'Income & Expense' => ['transactions.view', 'transactions.create', 'transactions.edit', 'transactions.delete', 'transaction-categories.manage'],

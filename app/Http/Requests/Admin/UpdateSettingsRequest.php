@@ -47,6 +47,7 @@ class UpdateSettingsRequest extends FormRequest
             'invoice_signatory_name' => ['nullable', 'string', 'max:255'],
             'invoice_signatory_designation' => ['nullable', 'string', 'max:255'],
             'invoice_footer_note' => ['nullable', 'string', 'max:500'],
+            'sales_contract_terms' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

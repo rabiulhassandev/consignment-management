@@ -135,6 +135,33 @@ Route::middleware(['auth', 'approved', 'staff'])
             ->middleware('permission:invoices.delete')
             ->name('invoices.destroy');
 
+        Route::middleware('permission:sales-contracts.view')->group(function () {
+            Route::get('sales-contracts', [Admin\SalesContractController::class, 'index'])->name('sales-contracts.index');
+            Route::get('sales-contracts/{salesContract}', [Admin\SalesContractController::class, 'show'])
+                ->whereNumber('salesContract')
+                ->name('sales-contracts.show');
+            Route::get('sales-contracts/{salesContract}/print', [Admin\SalesContractController::class, 'print'])
+                ->whereNumber('salesContract')
+                ->name('sales-contracts.print');
+            Route::get('sales-contracts/{salesContract}/pdf', [Admin\SalesContractController::class, 'pdf'])
+                ->whereNumber('salesContract')
+                ->name('sales-contracts.pdf');
+        });
+
+        Route::middleware('permission:sales-contracts.create')->group(function () {
+            Route::get('sales-contracts/create', [Admin\SalesContractController::class, 'create'])->name('sales-contracts.create');
+            Route::post('sales-contracts', [Admin\SalesContractController::class, 'store'])->name('sales-contracts.store');
+        });
+
+        Route::middleware('permission:sales-contracts.edit')->group(function () {
+            Route::get('sales-contracts/{salesContract}/edit', [Admin\SalesContractController::class, 'edit'])->name('sales-contracts.edit');
+            Route::put('sales-contracts/{salesContract}', [Admin\SalesContractController::class, 'update'])->name('sales-contracts.update');
+        });
+
+        Route::delete('sales-contracts/{salesContract}', [Admin\SalesContractController::class, 'destroy'])
+            ->middleware('permission:sales-contracts.delete')
+            ->name('sales-contracts.destroy');
+
         Route::middleware('permission:lc-bills.view')->group(function () {
             Route::get('lc-bills', [Admin\LcBillController::class, 'index'])->name('lc-bills.index');
             Route::get('lc-bills/{lcBill}', [Admin\LcBillController::class, 'show'])
