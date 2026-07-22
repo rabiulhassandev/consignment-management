@@ -32,6 +32,108 @@ class CustomerManagementTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_staff_with_permission_can_create_a_customer_with_login_credentials(): void
+    {
+        $staff = $this->createStaffUser('customers.create', 'customers.view');
+
+        $this->actingAs($staff)
+            ->get(route('admin.customers.create'))
+            ->assertOk()
+            ->assertSee('Login Credentials');
+
+        $response = $this->actingAs($staff)->post(route('admin.customers.store'), [
+            'name' => 'Rahim Trading',
+            'email' => 'rahim@example.com',
+            'phone' => '01711000000',
+            'company_name' => 'Rahim Trading Ltd',
+            'address' => 'Dhaka, Bangladesh',
+            'status' => UserStatus::Approved->value,
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'new-secret-password',
+        ]);
+
+        $customer = User::query()->where('email', 'rahim@example.com')->sole();
+
+        $response->assertRedirect(route('admin.customers.show', $customer));
+        $this->assertTrue($customer->isCustomer());
+        $this->assertSame(UserStatus::Approved, $customer->status);
+        $this->assertSame('Rahim Trading Ltd', $customer->company_name);
+        $this->assertTrue(Hash::check('new-secret-password', $customer->password));
+    }
+
+    public function test_created_customer_can_log_in_immediately(): void
+    {
+        $staff = $this->createStaffUser('customers.create', 'customers.view');
+
+        $this->actingAs($staff)->post(route('admin.customers.store'), [
+            'name' => 'Rahim Trading',
+            'email' => 'rahim@example.com',
+            'status' => UserStatus::Approved->value,
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'new-secret-password',
+        ]);
+
+        $this->post(route('logout'));
+
+        $this->post(route('login.store'), [
+            'email' => 'rahim@example.com',
+            'password' => 'new-secret-password',
+        ]);
+
+        $this->assertAuthenticatedAs(User::query()->where('email', 'rahim@example.com')->sole());
+    }
+
+    public function test_creating_a_customer_requires_a_unique_email_and_confirmed_password(): void
+    {
+        $staff = $this->createStaffUser('customers.create');
+        $existing = User::factory()->customer()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.customers.store'), [
+            'name' => 'Rahim Trading',
+            'email' => $existing->email,
+            'status' => UserStatus::Approved->value,
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'different-password',
+        ]);
+
+        $response->assertSessionHasErrors(['email', 'password']);
+        $this->assertSame(1, User::customers()->count());
+    }
+
+    public function test_staff_without_permission_cannot_create_a_customer(): void
+    {
+        $staff = $this->createStaffUser('customers.view');
+
+        $this->actingAs($staff)
+            ->get(route('admin.customers.create'))
+            ->assertForbidden();
+
+        $this->actingAs($staff)
+            ->post(route('admin.customers.store'), [
+                'name' => 'Rahim Trading',
+                'email' => 'rahim@example.com',
+                'status' => UserStatus::Approved->value,
+                'password' => 'new-secret-password',
+                'password_confirmation' => 'new-secret-password',
+            ])
+            ->assertForbidden();
+
+        $this->assertSame(0, User::customers()->count());
+    }
+
+    public function test_add_customer_button_is_only_shown_with_permission(): void
+    {
+        $this->actingAs($this->createStaffUser('customers.view'))
+            ->get(route('admin.customers.index'))
+            ->assertOk()
+            ->assertDontSee('Add Customer');
+
+        $this->actingAs($this->createStaffUser('customers.view', 'customers.create'))
+            ->get(route('admin.customers.index'))
+            ->assertOk()
+            ->assertSee('Add Customer');
+    }
+
     public function test_customer_cannot_access_admin_area(): void
     {
         $customer = User::factory()->customer()->create();

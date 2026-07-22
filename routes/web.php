@@ -42,6 +42,11 @@ Route::middleware(['auth', 'approved', 'staff'])
                 ->name('customers.show');
         });
 
+        Route::middleware('permission:customers.create')->group(function () {
+            Route::get('customers/create', [Admin\CustomerController::class, 'create'])->name('customers.create');
+            Route::post('customers', [Admin\CustomerController::class, 'store'])->name('customers.store');
+        });
+
         Route::middleware('permission:customers.edit')->group(function () {
             Route::get('customers/{customer}/edit', [Admin\CustomerController::class, 'edit'])->name('customers.edit');
             Route::put('customers/{customer}', [Admin\CustomerController::class, 'update'])->name('customers.update');

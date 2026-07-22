@@ -1,7 +1,12 @@
 <x-admin-layout title="Customers">
-    <div class="mb-6">
-        <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Customers</h1>
-        <p class="mt-1 text-sm text-gray-500">Review registrations and manage customer accounts.</p>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight text-gray-900">Customers</h1>
+            <p class="mt-1 text-sm text-gray-500">Review registrations and manage customer accounts.</p>
+        </div>
+        @can('customers.create')
+            <x-button icon="plus" :href="route('admin.customers.create')">Add Customer</x-button>
+        @endcan
     </div>
 
     <x-card :flush="true">

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserStatus;
+use App\Enums\UserType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreCustomerRequest;
 use App\Http\Requests\Admin\UpdateCustomerPasswordRequest;
 use App\Http\Requests\Admin\UpdateCustomerRequest;
 use App\Models\Category;
@@ -43,6 +45,29 @@ class CustomerController extends Controller
             'search' => $search,
             'status' => $status,
         ]);
+    }
+
+    /**
+     * Show the form for creating a customer account.
+     */
+    public function create(): View
+    {
+        return view('admin.customers.create', ['statuses' => UserStatus::cases()]);
+    }
+
+    /**
+     * Create a customer account with login credentials.
+     */
+    public function store(StoreCustomerRequest $request): RedirectResponse
+    {
+        $customer = User::create([
+            ...$request->validated(),
+            'type' => UserType::Customer,
+        ]);
+
+        return redirect()
+            ->route('admin.customers.show', $customer)
+            ->with('success', "{$customer->name} can now log in with the credentials you set.");
     }
 
     /**

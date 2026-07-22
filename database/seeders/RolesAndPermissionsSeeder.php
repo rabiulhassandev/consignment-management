@@ -17,7 +17,7 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<string, list<string>>
      */
     public const PERMISSIONS = [
-        'Customers' => ['customers.view', 'customers.edit', 'customers.approve'],
+        'Customers' => ['customers.view', 'customers.create', 'customers.edit', 'customers.approve'],
         'Suppliers' => ['suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete'],
         'Consignments' => ['consignments.view', 'consignments.create', 'consignments.edit', 'consignments.delete'],
         'Invoices' => ['invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete'],
