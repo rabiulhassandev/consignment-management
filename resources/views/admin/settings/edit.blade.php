@@ -94,6 +94,10 @@
                 <x-form.textarea name="sales_contract_terms" label="Sales contract terms &amp; conditions"
                                  :value="$settings['sales_contract_terms']" rows="6"
                                  placeholder="One condition per line. Prefilled into every new sales contract, where it stays editable." />
+
+                <x-form.textarea name="proforma_invoice_declaration" label="Proforma invoice declaration"
+                                 :value="$settings['proforma_invoice_declaration']" rows="3"
+                                 placeholder="e.g. We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct" />
             </div>
         </x-card>
 

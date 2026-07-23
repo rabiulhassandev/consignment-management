@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SpellsCurrencyAmount;
 use Database\Factories\SalesContractFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,8 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Number;
-use Illuminate\Support\Str;
 
 #[Fillable([
     'contract_no',
@@ -25,6 +24,8 @@ class SalesContract extends Model
 {
     /** @use HasFactory<SalesContractFactory> */
     use HasFactory;
+
+    use SpellsCurrencyAmount;
 
     /**
      * @return array<string, string>
@@ -81,16 +82,6 @@ class SalesContract extends Model
      */
     public function amountInWords(): string
     {
-        $total = $this->totalAmount();
-        $whole = (int) floor($total);
-        $fraction = (int) round(($total - $whole) * 100);
-
-        $words = Str::title(str_replace('-', ' ', Number::spell($whole)));
-
-        if ($fraction > 0) {
-            $words .= ' and '.str_pad((string) $fraction, 2, '0', STR_PAD_LEFT).'/100';
-        }
-
-        return trim($words.' '.$this->currency->name).' Only';
+        return $this->spellAmount($this->totalAmount());
     }
 }

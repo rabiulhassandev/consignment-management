@@ -19,7 +19,12 @@
     <div class="mt-9 flex items-start justify-between gap-8">
         <div class="flex items-start gap-4">
             <p class="pt-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-gray-400">Billed To</p>
-            <p class="text-2xl font-bold tracking-tight text-slate-900">{{ $invoice->bill_to }}</p>
+            <div>
+                <p class="text-2xl font-bold tracking-tight text-slate-900">{{ $invoice->bill_to }}</p>
+                @if ($invoice->bill_to_address)
+                    <p class="mt-1 max-w-xs whitespace-pre-line text-[13px] leading-relaxed text-gray-500">{{ $invoice->bill_to_address }}</p>
+                @endif
+            </div>
         </div>
         <dl class="shrink-0 space-y-1.5 text-[15px]">
             <div class="flex items-baseline justify-end gap-8">

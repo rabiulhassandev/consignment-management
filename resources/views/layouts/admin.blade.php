@@ -66,13 +66,21 @@
                 @endif
             @endcan
 
-            @canany(['invoices.view', 'sales-contracts.view', 'lc-bills.view', 'tt-accounts.view'])
+            @canany(['invoices.view', 'proforma-invoices.view', 'sales-contracts.view', 'lc-bills.view', 'tt-accounts.view'])
                 <p class="px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Billing</p>
 
                 @can('invoices.view')
                     @if (Route::has('admin.invoices.index'))
                         <x-nav-item variant="dark" :href="route('admin.invoices.index')" icon="receipt" :active="request()->routeIs('admin.invoices.*')">
                             Invoices
+                        </x-nav-item>
+                    @endif
+                @endcan
+
+                @can('proforma-invoices.view')
+                    @if (Route::has('admin.proforma-invoices.index'))
+                        <x-nav-item variant="dark" :href="route('admin.proforma-invoices.index')" icon="truck" :active="request()->routeIs('admin.proforma-invoices.*')">
+                            Proforma Invoices
                         </x-nav-item>
                     @endif
                 @endcan

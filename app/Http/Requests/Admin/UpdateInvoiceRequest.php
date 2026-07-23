@@ -30,6 +30,7 @@ class UpdateInvoiceRequest extends FormRequest
         return [
             'invoice_no' => ['required', 'string', 'max:100', Rule::unique('invoices')->ignore($invoice)],
             'bill_to' => ['required', 'string', 'max:255'],
+            'bill_to_address' => ['nullable', 'string', 'max:500'],
             'invoice_date' => ['required', 'date'],
             'currency_id' => ['required', Rule::exists('currencies', 'id')],
             'items' => ['required', 'array', 'min:1'],

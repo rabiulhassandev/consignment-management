@@ -70,6 +70,11 @@
                 @endforeach
             </x-form.select>
         </div>
+
+        <div class="mt-4">
+            <x-form.textarea name="bill_to_address" label="Customer address" rows="2"
+                             :value="$invoice?->bill_to_address ?? ''" placeholder="Customer / company address" />
+        </div>
     </x-card>
 
     <div class="mt-6">

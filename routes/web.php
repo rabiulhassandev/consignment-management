@@ -135,6 +135,33 @@ Route::middleware(['auth', 'approved', 'staff'])
             ->middleware('permission:invoices.delete')
             ->name('invoices.destroy');
 
+        Route::middleware('permission:proforma-invoices.view')->group(function () {
+            Route::get('proforma-invoices', [Admin\ProformaInvoiceController::class, 'index'])->name('proforma-invoices.index');
+            Route::get('proforma-invoices/{proformaInvoice}', [Admin\ProformaInvoiceController::class, 'show'])
+                ->whereNumber('proformaInvoice')
+                ->name('proforma-invoices.show');
+            Route::get('proforma-invoices/{proformaInvoice}/print', [Admin\ProformaInvoiceController::class, 'print'])
+                ->whereNumber('proformaInvoice')
+                ->name('proforma-invoices.print');
+            Route::get('proforma-invoices/{proformaInvoice}/pdf', [Admin\ProformaInvoiceController::class, 'pdf'])
+                ->whereNumber('proformaInvoice')
+                ->name('proforma-invoices.pdf');
+        });
+
+        Route::middleware('permission:proforma-invoices.create')->group(function () {
+            Route::get('proforma-invoices/create', [Admin\ProformaInvoiceController::class, 'create'])->name('proforma-invoices.create');
+            Route::post('proforma-invoices', [Admin\ProformaInvoiceController::class, 'store'])->name('proforma-invoices.store');
+        });
+
+        Route::middleware('permission:proforma-invoices.edit')->group(function () {
+            Route::get('proforma-invoices/{proformaInvoice}/edit', [Admin\ProformaInvoiceController::class, 'edit'])->name('proforma-invoices.edit');
+            Route::put('proforma-invoices/{proformaInvoice}', [Admin\ProformaInvoiceController::class, 'update'])->name('proforma-invoices.update');
+        });
+
+        Route::delete('proforma-invoices/{proformaInvoice}', [Admin\ProformaInvoiceController::class, 'destroy'])
+            ->middleware('permission:proforma-invoices.delete')
+            ->name('proforma-invoices.destroy');
+
         Route::middleware('permission:sales-contracts.view')->group(function () {
             Route::get('sales-contracts', [Admin\SalesContractController::class, 'index'])->name('sales-contracts.index');
             Route::get('sales-contracts/{salesContract}', [Admin\SalesContractController::class, 'show'])

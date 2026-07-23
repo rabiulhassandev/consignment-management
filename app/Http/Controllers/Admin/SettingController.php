@@ -39,6 +39,7 @@ class SettingController extends Controller
         'invoice_signatory_designation',
         'invoice_footer_note',
         'sales_contract_terms',
+        'proforma_invoice_declaration',
     ];
 
     /**

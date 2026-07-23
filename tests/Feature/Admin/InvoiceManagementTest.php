@@ -32,6 +32,7 @@ class InvoiceManagementTest extends TestCase
         $response = $this->actingAs($staff)->post(route('admin.invoices.store'), [
             'invoice_no' => 'INV-1001',
             'bill_to' => 'MIL',
+            'bill_to_address' => 'House 12, Gulshan, Dhaka, Bangladesh',
             'invoice_date' => '2026-07-02',
             'currency_id' => $currency->id,
             'items' => [
@@ -45,6 +46,7 @@ class InvoiceManagementTest extends TestCase
         $this->assertNotNull($invoice);
         $response->assertRedirect(route('admin.invoices.show', $invoice));
         $this->assertSame('MIL', $invoice->bill_to);
+        $this->assertSame('House 12, Gulshan, Dhaka, Bangladesh', $invoice->bill_to_address);
         $this->assertCount(2, $invoice->items);
 
         $deliveryFee = $invoice->items->firstWhere('description', 'Delivery fee');
@@ -163,14 +165,15 @@ class InvoiceManagementTest extends TestCase
     public function test_invoice_print_page_renders(): void
     {
         $staff = $this->createStaffUser('invoices.view');
-        $item = InvoiceItem::factory()->create();
-        $invoice = $item->invoice;
+        $invoice = Invoice::factory()->create(['bill_to_address' => 'House 12, Gulshan, Dhaka, Bangladesh']);
+        $item = InvoiceItem::factory()->create(['invoice_id' => $invoice->id]);
 
         $this->actingAs($staff)
             ->get(route('admin.invoices.print', $invoice))
             ->assertOk()
             ->assertSee($invoice->invoice_no)
             ->assertSee($invoice->bill_to)
+            ->assertSee('House 12, Gulshan, Dhaka, Bangladesh')
             ->assertSee($item->description);
     }
 

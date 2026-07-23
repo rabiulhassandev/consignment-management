@@ -21,6 +21,7 @@ class InvoiceFactory extends Factory
         return [
             'invoice_no' => fake()->unique()->numerify('INV-####'),
             'bill_to' => fake()->company(),
+            'bill_to_address' => fake()->address(),
             'invoice_date' => fake()->dateTimeBetween('-1 year')->format('Y-m-d'),
             'currency_id' => Currency::factory(),
         ];

@@ -21,6 +21,9 @@
                         </td>
                         <td style="vertical-align: top;">
                             <span class="strong" style="font-size: 19px;">{{ $invoice->bill_to }}</span>
+                            @if ($invoice->bill_to_address)
+                                <p class="muted" style="font-size: 11px; line-height: 1.6; margin-top: 4px;">{{ $invoice->bill_to_address }}</p>
+                            @endif
                         </td>
                     </tr>
                 </table>
