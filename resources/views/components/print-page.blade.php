@@ -1,5 +1,5 @@
 {{-- Branded full-page document frame: letterhead, brand graphics, and page footer around the document body. --}}
-@props(['title' => null, 'backUrl' => null, 'heading'])
+@props(['title' => null, 'backUrl' => null, 'heading', 'pdfUrl' => null])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -15,7 +15,7 @@
     $dhakaContact = \App\Models\Setting::get('dhaka_office_contact');
 @endphp
 
-<x-print-layout :title="$title" :back-url="$backUrl" :flush="true">
+<x-print-layout :title="$title" :back-url="$backUrl" :pdf-url="$pdfUrl" :flush="true">
     {{-- Suppress the layout's default letterhead — this frame draws its own. --}}
     <x-slot:letterhead></x-slot:letterhead>
 

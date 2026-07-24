@@ -119,6 +119,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('invoices/{invoice}/pdf', [Admin\InvoiceController::class, 'pdf'])
                 ->whereNumber('invoice')
                 ->name('invoices.pdf');
+            Route::get('invoices/{invoice}/excel', [Admin\InvoiceController::class, 'excel'])
+                ->whereNumber('invoice')
+                ->name('invoices.excel');
         });
 
         Route::middleware('permission:invoices.create')->group(function () {

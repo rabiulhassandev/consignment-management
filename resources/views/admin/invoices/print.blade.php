@@ -14,7 +14,7 @@
     $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch || $bankSwiftCode || $bankRoutingNumber;
 @endphp
 
-<x-print-page :title="'Invoice '.$invoice->invoice_no" :back-url="route('admin.invoices.show', $invoice)" heading="Invoice">
+<x-print-page :title="'Invoice '.$invoice->invoice_no" :back-url="route('admin.invoices.show', $invoice)" :pdf-url="route('admin.invoices.pdf', $invoice)" heading="Invoice">
     {{-- Billed to + invoice meta --}}
     <div class="mt-9 flex items-start justify-between gap-8">
         <div class="flex items-start gap-4">

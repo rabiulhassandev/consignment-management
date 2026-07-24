@@ -13,6 +13,8 @@
 
         <div class="flex flex-wrap items-center gap-2">
             <x-button variant="secondary" :href="route('admin.invoices.print', $invoice)" target="_blank" icon="printer">Print</x-button>
+            <x-button variant="secondary" :href="route('admin.invoices.pdf', $invoice)" icon="arrow-down-tray">PDF</x-button>
+            <x-button variant="secondary" :href="route('admin.invoices.excel', $invoice)" icon="document-arrow-down">Excel</x-button>
             @can('invoices.edit')
                 <x-button variant="secondary" :href="route('admin.invoices.edit', $invoice)" icon="pencil">Edit</x-button>
             @endcan

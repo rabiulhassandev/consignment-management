@@ -4,8 +4,14 @@
     $bankAccountName = \App\Models\Setting::get('bank_account_name');
     $bankAccountNumber = \App\Models\Setting::get('bank_account_number');
     $bankBranch = \App\Models\Setting::get('bank_branch');
+    $bankSwiftCode = \App\Models\Setting::get('bank_swift_code');
+    $bankRoutingNumber = \App\Models\Setting::get('bank_routing_number');
+    $paymentTerms = \App\Models\Setting::get('invoice_payment_terms');
+    $terms = \App\Models\Setting::get('invoice_terms');
+    $signatoryName = \App\Models\Setting::get('invoice_signatory_name');
+    $signatoryDesignation = \App\Models\Setting::get('invoice_signatory_designation');
     $footerNote = \App\Models\Setting::get('invoice_footer_note');
-    $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch;
+    $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch || $bankSwiftCode || $bankRoutingNumber;
     $symbol = $invoice->currency->symbol;
 @endphp
 
@@ -91,9 +97,24 @@
                 <p class="right muted" style="font-size: 10px; margin-top: 6px;">
                     Amount in {{ $invoice->currency->name }} ({{ $invoice->currency->code }}) only
                 </p>
+                @if ($paymentTerms)
+                    <p class="right strong" style="font-size: 10px; margin-top: 4px;">{{ $paymentTerms }}</p>
+                @endif
             </td>
         </tr>
     </table>
+
+    {{-- Terms & conditions --}}
+    @if ($terms)
+        <table style="margin-top: 30px;">
+            <tr>
+                <td>
+                    <p class="muted uppercase" style="font-size: 10px; font-weight: bold;">Terms &amp; Conditions</p>
+                    <p class="dark" style="font-size: 11px; line-height: 1.6; margin-top: 4px;">{{ $terms }}</p>
+                </td>
+            </tr>
+        </table>
+    @endif
 
     {{-- Payment details + signature --}}
     <table style="margin-top: 44px; border-top: 1px solid #e5e7eb;">
@@ -113,11 +134,24 @@
                     @if ($bankBranch)
                         <p><span style="display: inline-block; width: 110px;">Branch</span><span class="dark">{{ $bankBranch }}</span></p>
                     @endif
+                    @if ($bankSwiftCode)
+                        <p><span style="display: inline-block; width: 110px;">SWIFT / BIC</span><span class="dark num">{{ $bankSwiftCode }}</span></p>
+                    @endif
+                    @if ($bankRoutingNumber)
+                        <p><span style="display: inline-block; width: 110px;">Routing No.</span><span class="dark num">{{ $bankRoutingNumber }}</span></p>
+                    @endif
                 @endif
             </td>
-            <td class="right" style="vertical-align: bottom; padding-top: 56px; width: 250px;">
+            <td class="center" style="vertical-align: bottom; padding-top: 56px; width: 250px;">
                 <div style="border-top: 2px solid #1e293b; padding-top: 8px;">
-                    <p class="dark" style="font-size: 13px;">Authorized Signature</p>
+                    @if ($signatoryName)
+                        <p class="dark strong" style="font-size: 13px;">{{ $signatoryName }}</p>
+                        @if ($signatoryDesignation)
+                            <p class="muted" style="font-size: 10px; margin-top: 2px;">{{ $signatoryDesignation }}</p>
+                        @endif
+                    @else
+                        <p class="dark" style="font-size: 13px;">Authorized Signature</p>
+                    @endif
                     <p class="muted" style="font-size: 10px; margin-top: 3px;">For {{ $companyName }}</p>
                 </div>
             </td>

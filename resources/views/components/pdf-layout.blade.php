@@ -59,21 +59,22 @@
         .dark { color: #1e293b; }
         .uppercase { text-transform: uppercase; letter-spacing: 1px; }
         .right { text-align: right; }
+        .center { text-align: center; }
         .num { font-variant-numeric: tabular-nums; }
         .cjk { font-family: 'cjk', DejaVu Sans, sans-serif; }
 
-        .letterhead { border-bottom: 2px solid #1e293b; padding-bottom: 12px; }
-        .letterhead .company { font-size: 15px; font-weight: bold; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.3px; }
-        .letterhead .heading { font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
-        .letterhead .tagline { font-size: 11px; color: #94a3b8; line-height: 1.25; }
+        .letterhead-row { padding-bottom: 12px; }
+        .company { font-size: 19px; font-weight: bold; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.3px; }
+        .heading { font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
+        .tagline { font-size: 13px; color: #94a3b8; line-height: 1.3; }
 
-        .chevrons { position: fixed; left: -40px; top: 430px; }
-        .rings { position: fixed; right: -46px; bottom: -30px; }
+        .chevrons { position: fixed; left: -40px; top: 430px; z-index: -2; }
+        .rings { position: fixed; right: -46px; bottom: -140px; z-index: -1; }
 
         .footer { position: fixed; bottom: -146px; left: 0; right: 0; }
         .footer .info { font-size: 9px; color: #64748b; line-height: 1.6; padding-bottom: 5px; }
         .footer .info .label { font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
-        .brandbar { display: block; width: 100%; height: 9px; background-color: #4db884; background-image: linear-gradient(to right, #8dc63f 0%, #4db884 50%, #27aae1 100%); }
+        .brandbar { display: block; width: 100%; height: 9px; background-color: #4db884; background-image: linear-gradient(to right, #8dc63f 0%, #4db884 50%, #27aae1 100%); z-index: -1; }
     </style>
 </head>
 <body>
@@ -82,14 +83,14 @@
     <img class="rings" src="{{ $ringsUri }}" width="200" height="186" alt="">
 
     {{-- Letterhead --}}
-    <table class="letterhead">
+    <table class="letterhead-row">
         <tr>
             <td style="vertical-align: middle; width: 62%;">
                 <table>
                     <tr>
                         @if ($logoUri)
-                            <td style="vertical-align: middle; width: 172px;">
-                                <img src="{{ $logoUri }}" style="width: 168px; height: auto;" alt="{{ $companyName }}">
+                            <td style="vertical-align: middle; width: 210px;">
+                                <img src="{{ $logoUri }}" style="width: 205px; height: auto;" alt="{{ $companyName }}">
                             </td>
                         @endif
                         @if ($taglineHtml)
@@ -105,7 +106,7 @@
             </td>
         </tr>
     </table>
-    <p class="letterhead" style="border: 0; padding-top: 8px;"><span class="company">{{ $companyName }}</span></p>
+    <p style="padding-top: 0px;"><span class="company">{{ $companyName }}</span></p>
     <div style="border-bottom: 2px solid #1e293b; margin-top: 6px;"></div>
 
     {{-- Document body --}}

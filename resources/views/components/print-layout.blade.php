@@ -1,4 +1,4 @@
-@props(['title' => null, 'backUrl' => null, 'flush' => false])
+@props(['title' => null, 'backUrl' => null, 'flush' => false, 'pdfUrl' => null])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -24,7 +24,38 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-100 font-sans text-gray-900 antialiased print:bg-white">
-<div x-data="{ letterhead: true }">
+<div x-data="{
+        letterhead: true,
+        sharing: false,
+        canShare: false,
+        init() {
+            if (! {{ Js::from((bool) $pdfUrl) }}) return;
+            try {
+                const probe = new File([''], 'probe.pdf', { type: 'application/pdf' });
+                this.canShare = !!(navigator.canShare && navigator.canShare({ files: [probe] }));
+            } catch (e) {
+                this.canShare = false;
+            }
+        },
+        async sharePdf() {
+            if (this.sharing) return;
+            this.sharing = true;
+            try {
+                const response = await fetch({{ Js::from($pdfUrl) }});
+                if (! response.ok) { throw new Error('PDF download failed'); }
+                const blob = await response.blob();
+                const filename = {{ Js::from(($title ? \Illuminate\Support\Str::slug($title) : 'document').'.pdf') }};
+                const file = new File([blob], filename, { type: 'application/pdf' });
+                await navigator.share({ files: [file], title: {{ Js::from($title ?? 'Document') }} });
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    alert('Unable to share the PDF. Please try downloading it instead.');
+                }
+            } finally {
+                this.sharing = false;
+            }
+        },
+    }">
     {{-- Toolbar (hidden when printing) --}}
     <div class="sticky top-0 z-10 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-md print:hidden">
         <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
@@ -41,6 +72,9 @@
                     Company header
                     <span class="hidden text-xs text-gray-400 sm:inline">(uncheck for pre-printed pad)</span>
                 </label>
+                <x-button variant="secondary" icon="share" x-cloak x-show="canShare" x-bind:disabled="sharing" @click="sharePdf()">
+                    <span x-text="sharing ? 'Preparing…' : 'Share PDF'"></span>
+                </x-button>
                 <x-button icon="printer" onclick="window.print()">Print</x-button>
             </div>
         </div>
