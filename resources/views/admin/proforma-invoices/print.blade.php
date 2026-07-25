@@ -17,6 +17,7 @@
 
 <x-print-page :title="'Proforma Invoice '.$proformaInvoice->invoice_no"
               :back-url="route('admin.proforma-invoices.show', $proformaInvoice)"
+              :pdf-url="route('admin.proforma-invoices.pdf', $proformaInvoice)"
               heading="Proforma">
     <p class="mt-7 text-center text-2xl font-bold uppercase tracking-[0.15em] text-slate-900">Proforma Invoice</p>
 

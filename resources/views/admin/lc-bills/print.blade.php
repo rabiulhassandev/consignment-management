@@ -2,7 +2,10 @@
     $companyName = \App\Models\Setting::get('company_name') ?: \App\Models\Setting::get('site_name', 'BNoor Group');
 @endphp
 
-<x-print-page :title="'LC Bill '.$lcBill->bill_no" :back-url="route('admin.lc-bills.show', $lcBill)" heading="LC Bill">
+<x-print-page :title="'LC Bill '.$lcBill->bill_no"
+              :back-url="route('admin.lc-bills.show', $lcBill)"
+              :pdf-url="route('admin.lc-bills.pdf', $lcBill)"
+              heading="LC Bill">
     {{-- Billed to + bill meta --}}
     <div class="mt-9 flex items-start justify-between gap-8">
         <div>

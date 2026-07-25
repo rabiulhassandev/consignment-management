@@ -4,7 +4,10 @@
     $companyName = \App\Models\Setting::get('company_name') ?: \App\Models\Setting::get('site_name', 'BNoor Group');
 @endphp
 
-<x-print-page :title="$ttAccount->title" :back-url="route('admin.tt-accounts.show', $ttAccount)" heading="Statement">
+<x-print-page :title="$ttAccount->title"
+              :back-url="route('admin.tt-accounts.show', $ttAccount)"
+              :pdf-url="route('admin.tt-accounts.pdf', $ttAccount)"
+              heading="Statement">
     {{-- Account + statement meta --}}
     <div class="mt-9 flex items-start justify-between gap-8">
         <div>

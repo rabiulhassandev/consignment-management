@@ -17,6 +17,8 @@
 
         <div class="flex flex-wrap items-center gap-2">
             <x-button variant="secondary" :href="route('admin.sales-contracts.print', $salesContract)" target="_blank" icon="printer">Print</x-button>
+            <x-button variant="secondary" :href="route('admin.sales-contracts.pdf', $salesContract)" icon="arrow-down-tray">PDF</x-button>
+            <x-button variant="secondary" :href="route('admin.sales-contracts.excel', $salesContract)" icon="document-arrow-down">Excel</x-button>
             @can('sales-contracts.edit')
                 <x-button variant="secondary" :href="route('admin.sales-contracts.edit', $salesContract)" icon="pencil">Edit</x-button>
             @endcan

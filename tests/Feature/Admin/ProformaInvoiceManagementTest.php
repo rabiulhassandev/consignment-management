@@ -7,6 +7,7 @@ use App\Models\ProformaInvoice;
 use App\Models\ProformaInvoiceItem;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class ProformaInvoiceManagementTest extends TestCase
@@ -352,5 +353,132 @@ class ProformaInvoiceManagementTest extends TestCase
 
         $this->actingAs($staff)->get(route('admin.proforma-invoices.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.proforma-invoices.print', $proformaInvoice))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.proforma-invoices.pdf', $proformaInvoice))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.proforma-invoices.excel', $proformaInvoice))->assertForbidden();
+    }
+
+    /**
+     * Flatten every non-empty cell of the generated workbook into a list of string values.
+     *
+     * @return array<int, string>
+     */
+    private function excelCellValues(ProformaInvoice $proformaInvoice): array
+    {
+        $response = $this->get(route('admin.proforma-invoices.excel', $proformaInvoice));
+        $response->assertOk();
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'proforma-excel-test-');
+        file_put_contents($tempFile, $response->streamedContent());
+
+        $sheet = IOFactory::load($tempFile)->getActiveSheet();
+        $values = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                $value = $cell->getValue();
+
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+        }
+
+        unlink($tempFile);
+
+        return $values;
+    }
+
+    public function test_excel_download_is_generated(): void
+    {
+        $staff = $this->createStaffUser('proforma-invoices.view');
+        $proformaInvoice = ProformaInvoiceItem::factory()->create()->proformaInvoice;
+
+        $response = $this->actingAs($staff)->get(route('admin.proforma-invoices.excel', $proformaInvoice));
+
+        $response->assertOk();
+        $response->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        $this->assertStringContainsString(
+            "proforma-invoice-{$proformaInvoice->invoice_no}.xlsx",
+            $response->headers->get('content-disposition'),
+        );
+    }
+
+    public function test_excel_contains_the_printed_proforma_details(): void
+    {
+        $staff = $this->createStaffUser('proforma-invoices.view');
+        $currency = Currency::factory()->create(['code' => 'CNY', 'name' => 'Chinese Yuan', 'symbol' => '¥']);
+        $proformaInvoice = ProformaInvoice::factory()->create([
+            'invoice_no' => 'PI-5501',
+            'currency_id' => $currency->id,
+            'exporter_name' => 'BNoor Global Trading',
+            'buyer_name' => 'MIL Bangladesh',
+            'buyer_address' => 'House 12, Gulshan, Dhaka',
+            'port_of_loading' => 'Shanghai',
+            'final_destination' => 'Chattogram',
+            'delivery_payment_terms' => 'LC at sight',
+            'incoterm' => 'CFR',
+            'mark' => 'MIL-01',
+            'declaration' => 'We declare the details are true and correct.',
+            'advising_bank_name' => 'Bank of China',
+            'advising_bank_swift' => 'BKCHCNBJ',
+        ]);
+        ProformaInvoiceItem::factory()->create([
+            'proforma_invoice_id' => $proformaInvoice->id,
+            'description' => 'Polyester fabric',
+            'hs_code' => '5407.61.00',
+            'quantity' => '600.00',
+            'unit' => 'SETS',
+            'rate' => '12.50',
+            'amount' => '7500.00',
+        ]);
+
+        $this->actingAs($staff);
+        $values = $this->excelCellValues($proformaInvoice);
+
+        $this->assertContains('PROFORMA INVOICE', $values);
+        $this->assertContains('PI-5501', $values);
+        $this->assertContains('BNoor Global Trading', $values);
+        $this->assertContains('MIL Bangladesh', $values);
+        $this->assertContains('House 12, Gulshan, Dhaka', $values);
+        $this->assertContains('Polyester fabric', $values);
+        $this->assertContains('5407.61.00', $values);
+        $this->assertContains('600 SETS', $values);
+        $this->assertContains('MIL-01', $values);
+        $this->assertContains('Shanghai', $values);
+        $this->assertContains('Chattogram', $values);
+        $this->assertContains('LC AT SIGHT', $values);
+        $this->assertContains('Bank of China', $values);
+        $this->assertContains('BKCHCNBJ', $values);
+        $this->assertContains('7500', $values);
+        $this->assertContains('We declare the details are true and correct.', $values);
+        $this->assertContains($proformaInvoice->amountInWords(), $values);
+        $this->assertContains('For BNoor Global Trading', $values);
+    }
+
+    public function test_show_page_offers_pdf_and_excel_downloads(): void
+    {
+        $staff = $this->createStaffUser('proforma-invoices.view');
+        $proformaInvoice = ProformaInvoiceItem::factory()->create()->proformaInvoice;
+
+        $this->actingAs($staff)
+            ->get(route('admin.proforma-invoices.show', $proformaInvoice))
+            ->assertOk()
+            ->assertSee(route('admin.proforma-invoices.pdf', $proformaInvoice), false)
+            ->assertSee(route('admin.proforma-invoices.excel', $proformaInvoice), false);
+    }
+
+    public function test_print_page_includes_share_pdf_wiring(): void
+    {
+        $staff = $this->createStaffUser('proforma-invoices.view');
+        $proformaInvoice = ProformaInvoiceItem::factory()->create()->proformaInvoice;
+
+        $this->actingAs($staff)
+            ->get(route('admin.proforma-invoices.print', $proformaInvoice))
+            ->assertOk()
+            ->assertSee('Share PDF')
+            ->assertSee(str_replace('/', "\/", route('admin.proforma-invoices.pdf', $proformaInvoice)), false);
     }
 }

@@ -9,6 +9,7 @@ use App\Models\LcBill;
 use App\Models\LcBillEntry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class LcBillManagementTest extends TestCase
@@ -310,5 +311,135 @@ class LcBillManagementTest extends TestCase
 
         $this->actingAs($staff)->get(route('admin.lc-bills.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.lc-bills.print', $lcBill))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.lc-bills.pdf', $lcBill))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.lc-bills.excel', $lcBill))->assertForbidden();
+    }
+
+    /**
+     * Flatten every non-empty cell of the generated workbook into a list of string values.
+     *
+     * @return array<int, string>
+     */
+    private function excelCellValues(LcBill $lcBill): array
+    {
+        $response = $this->get(route('admin.lc-bills.excel', $lcBill));
+        $response->assertOk();
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'lc-bill-excel-test-');
+        file_put_contents($tempFile, $response->streamedContent());
+
+        $sheet = IOFactory::load($tempFile)->getActiveSheet();
+        $values = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                $value = $cell->getValue();
+
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+        }
+
+        unlink($tempFile);
+
+        return $values;
+    }
+
+    public function test_excel_download_is_generated(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.view');
+        $lcBill = LcBillEntry::factory()->create()->lcBill;
+
+        $response = $this->actingAs($staff)->get(route('admin.lc-bills.excel', $lcBill));
+
+        $response->assertOk();
+        $response->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        $this->assertStringContainsString(
+            "lc-bill-{$lcBill->bill_no}.xlsx",
+            $response->headers->get('content-disposition'),
+        );
+    }
+
+    public function test_excel_contains_the_printed_ledger_and_settlement(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.view');
+        $customer = User::factory()->create(['name' => 'MIL Bangladesh']);
+        $currency = Currency::factory()->create(['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$']);
+        $conversionCurrency = Currency::factory()->create(['code' => 'BDT', 'name' => 'Bangladeshi Taka', 'symbol' => '৳']);
+
+        $lcBill = LcBill::factory()->create([
+            'bill_no' => 'LCB-3311',
+            'customer_id' => $customer->id,
+            'currency_id' => $currency->id,
+            'lc_number' => '350626010291',
+            'lc_value' => '9071.00',
+            'shipment_title' => 'Shipment of raw cotton',
+            'conversion_currency_id' => $conversionCurrency->id,
+            'conversion_rate' => '110.0000',
+            'conversion_operation' => ConversionOperation::Multiply,
+        ]);
+
+        LcBillEntry::factory()->create([
+            'lc_bill_id' => $lcBill->id,
+            'type' => EntryType::Received,
+            'description' => 'LC proceeds received',
+            'amount' => '9000.00',
+        ]);
+        LcBillEntry::factory()->create([
+            'lc_bill_id' => $lcBill->id,
+            'type' => EntryType::Paid,
+            'description' => 'Bank charges',
+            'amount' => '500.00',
+        ]);
+
+        $this->actingAs($staff);
+        $values = $this->excelCellValues($lcBill);
+
+        $this->assertContains('LCB-3311', $values);
+        $this->assertContains('MIL Bangladesh', $values);
+        $this->assertContains('Shipment of raw cotton', $values);
+        $this->assertContains('350626010291', $values);
+        $this->assertContains('Received (USD)', $values);
+        $this->assertContains('Paid / Expenses (USD)', $values);
+        $this->assertContains('LC proceeds received', $values);
+        $this->assertContains('Bank charges', $values);
+        $this->assertContains('TOTAL RECEIVED', $values);
+        $this->assertContains('TOTAL PAID', $values);
+        $this->assertContains('9000', $values);
+        $this->assertContains('500', $values);
+        $this->assertContains('SETTLEMENT', $values);
+        $this->assertContains('8,500.00 USD', $values);
+        $this->assertContains('Bank Rate', $values);
+        $this->assertContains('× 110', $values);
+        $this->assertContains('DUE (BDT)', $values);
+        $this->assertContains('935000', $values);
+    }
+
+    public function test_show_page_offers_pdf_and_excel_downloads(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.view');
+        $lcBill = LcBillEntry::factory()->create()->lcBill;
+
+        $this->actingAs($staff)
+            ->get(route('admin.lc-bills.show', $lcBill))
+            ->assertOk()
+            ->assertSee(route('admin.lc-bills.pdf', $lcBill), false)
+            ->assertSee(route('admin.lc-bills.excel', $lcBill), false);
+    }
+
+    public function test_print_page_includes_share_pdf_wiring(): void
+    {
+        $staff = $this->createStaffUser('lc-bills.view');
+        $lcBill = LcBillEntry::factory()->create()->lcBill;
+
+        $this->actingAs($staff)
+            ->get(route('admin.lc-bills.print', $lcBill))
+            ->assertOk()
+            ->assertSee('Share PDF')
+            ->assertSee(str_replace('/', "\/", route('admin.lc-bills.pdf', $lcBill)), false);
     }
 }

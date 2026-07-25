@@ -29,6 +29,8 @@
 
         <div class="flex flex-wrap items-center gap-2">
             <x-button variant="secondary" :href="route('admin.proforma-invoices.print', $proformaInvoice)" target="_blank" icon="printer">Print</x-button>
+            <x-button variant="secondary" :href="route('admin.proforma-invoices.pdf', $proformaInvoice)" icon="arrow-down-tray">PDF</x-button>
+            <x-button variant="secondary" :href="route('admin.proforma-invoices.excel', $proformaInvoice)" icon="document-arrow-down">Excel</x-button>
             @can('proforma-invoices.edit')
                 <x-button variant="secondary" :href="route('admin.proforma-invoices.edit', $proformaInvoice)" icon="pencil">Edit</x-button>
             @endcan

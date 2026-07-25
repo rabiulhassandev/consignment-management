@@ -8,6 +8,7 @@
 
 <x-print-page :title="'Sales Contract '.$salesContract->contract_no"
               :back-url="route('admin.sales-contracts.show', $salesContract)"
+              :pdf-url="route('admin.sales-contracts.pdf', $salesContract)"
               heading="Contract">
     {{-- Buyer + contract meta --}}
     <table class="mt-8 w-full border border-slate-800 text-[13px]">

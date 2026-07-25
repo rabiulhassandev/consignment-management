@@ -93,6 +93,9 @@
                                         <a href="{{ route('admin.lc-bills.pdf', $lcBill) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Download PDF">
                                             <x-icon name="arrow-down-tray" class="size-4" />
                                         </a>
+                                        <a href="{{ route('admin.lc-bills.excel', $lcBill) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-emerald-600" title="Download Excel">
+                                            <x-icon name="document-arrow-down" class="size-4" />
+                                        </a>
                                         @can('lc-bills.edit')
                                             <a href="{{ route('admin.lc-bills.edit', $lcBill) }}" class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-indigo-600" title="Edit">
                                                 <x-icon name="pencil" class="size-4" />

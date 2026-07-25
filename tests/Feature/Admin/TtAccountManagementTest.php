@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\EntryType;
 use App\Models\Currency;
 use App\Models\TtAccount;
 use App\Models\TtAccountEntry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class TtAccountManagementTest extends TestCase
@@ -195,5 +197,125 @@ class TtAccountManagementTest extends TestCase
         $this->actingAs($staff)->get(route('admin.tt-accounts.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.tt-accounts.create'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.tt-accounts.print', $ttAccount))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.tt-accounts.pdf', $ttAccount))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.tt-accounts.excel', $ttAccount))->assertForbidden();
+    }
+
+    /**
+     * Flatten every non-empty cell of the generated workbook into a list of string values.
+     *
+     * @return array<int, string>
+     */
+    private function excelCellValues(TtAccount $ttAccount): array
+    {
+        $response = $this->get(route('admin.tt-accounts.excel', $ttAccount));
+        $response->assertOk();
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'tt-account-excel-test-');
+        file_put_contents($tempFile, $response->streamedContent());
+
+        $sheet = IOFactory::load($tempFile)->getActiveSheet();
+        $values = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                $value = $cell->getValue();
+
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+        }
+
+        unlink($tempFile);
+
+        return $values;
+    }
+
+    public function test_excel_download_is_generated(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $ttAccount = TtAccountEntry::factory()->create()->ttAccount;
+
+        $response = $this->actingAs($staff)->get(route('admin.tt-accounts.excel', $ttAccount));
+
+        $response->assertOk();
+        $response->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        $this->assertStringContainsString(
+            "tt-account-{$ttAccount->id}.xlsx",
+            $response->headers->get('content-disposition'),
+        );
+    }
+
+    public function test_excel_contains_the_printed_statement_and_running_balance(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $customer = User::factory()->create(['name' => 'MIL Bangladesh']);
+        $currency = Currency::factory()->create(['code' => 'CNY', 'name' => 'Chinese Yuan', 'symbol' => '¥']);
+
+        $ttAccount = TtAccount::factory()->create([
+            'title' => 'SPF CHINA TT ACCOUNTS 2026',
+            'customer_id' => $customer->id,
+            'currency_id' => $currency->id,
+            'opening_balance' => '1000.00',
+        ]);
+
+        TtAccountEntry::factory()->create([
+            'tt_account_id' => $ttAccount->id,
+            'type' => EntryType::Received,
+            'description' => 'TT received from buyer',
+            'amount' => '5000.00',
+            'remarks' => 'Advance payment',
+        ]);
+        TtAccountEntry::factory()->create([
+            'tt_account_id' => $ttAccount->id,
+            'type' => EntryType::Paid,
+            'description' => 'Supplier settlement',
+            'amount' => '2000.00',
+        ]);
+
+        $this->actingAs($staff);
+        $values = $this->excelCellValues($ttAccount);
+
+        $this->assertContains('SPF CHINA TT ACCOUNTS 2026', $values);
+        $this->assertContains('MIL Bangladesh', $values);
+        $this->assertContains('CNY (¥)', $values);
+        $this->assertContains('Opening balance', $values);
+        $this->assertContains('TT received from buyer', $values);
+        $this->assertContains('Supplier settlement', $values);
+        $this->assertContains('Advance payment', $values);
+        $this->assertContains('5000', $values);
+        $this->assertContains('2000', $values);
+        $this->assertContains('TOTALS', $values);
+        $this->assertContains('CLOSING BALANCE', $values);
+        $this->assertContains('4000', $values, 'Running balance: 1000 opening + 5000 received - 2000 paid.');
+        $this->assertContains('Balance in Chinese Yuan (CNY)', $values);
+    }
+
+    public function test_show_page_offers_pdf_and_excel_downloads(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $ttAccount = TtAccountEntry::factory()->create()->ttAccount;
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.show', $ttAccount))
+            ->assertOk()
+            ->assertSee(route('admin.tt-accounts.pdf', $ttAccount), false)
+            ->assertSee(route('admin.tt-accounts.excel', $ttAccount), false);
+    }
+
+    public function test_print_page_includes_share_pdf_wiring(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $ttAccount = TtAccountEntry::factory()->create()->ttAccount;
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.print', $ttAccount))
+            ->assertOk()
+            ->assertSee('Share PDF')
+            ->assertSee(str_replace('/', "\/", route('admin.tt-accounts.pdf', $ttAccount)), false);
     }
 }

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\ConversionOperation;
 use App\Enums\EntryType;
+use App\Http\Controllers\Concerns\BuildsDocumentWorkbook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreLcBillRequest;
 use App\Http\Requests\Admin\UpdateLcBillRequest;
 use App\Models\Currency;
 use App\Models\LcBill;
+use App\Models\Setting;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -18,9 +20,15 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LcBillController extends Controller
 {
+    use BuildsDocumentWorkbook;
+
     /**
      * List LC bills with optional search and customer/settled filters.
      */
@@ -172,6 +180,183 @@ class LcBillController extends Controller
         $pdf = Pdf::loadView('admin.lc-bills.pdf', $this->billData($lcBill))->setPaper('a4');
 
         return $pdf->download("lc-bill-{$lcBill->bill_no}.pdf");
+    }
+
+    /**
+     * Download the LC bill as a styled Excel workbook mirroring the printed document.
+     */
+    public function excel(LcBill $lcBill): StreamedResponse
+    {
+        $lcBill->load(['customer', 'currency', 'conversionCurrency', 'entries']);
+
+        [$spreadsheet, $sheet, $row] = $this->startDocumentWorkbook(
+            'LC Bill',
+            'LC Bill '.$lcBill->bill_no,
+            ['A' => 14, 'B' => 40, 'C' => 16, 'D' => 16, 'E' => 20],
+        );
+
+        $currency = $lcBill->currency;
+        $companyName = Setting::get('company_name') ?: Setting::get('site_name', 'BNoor Group');
+
+        // ---- Billed to + bill meta ----------------------------------------
+        $this->documentSectionLabel($sheet, "A{$row}", 'BILLED TO');
+        $this->documentMetaPair($sheet, $row, 'D', 'E', 'Bill No', $lcBill->bill_no);
+        $row++;
+
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", $lcBill->customer->name);
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0F172A');
+        $sheet->getRowDimension($row)->setRowHeight(20);
+        $this->documentMetaPair($sheet, $row, 'D', 'E', 'Bill Date', $lcBill->bill_date->format('d M Y'));
+        $row++;
+
+        if ($lcBill->shipment_title) {
+            $sheet->mergeCells("A{$row}:C{$row}");
+            $sheet->setCellValue("A{$row}", $lcBill->shipment_title);
+            $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        }
+
+        $this->documentMetaPair($sheet, $row, 'D', 'E', 'LC Number', (string) $lcBill->lc_number);
+        $row++;
+
+        if ($lcBill->lc_value !== null) {
+            $this->documentMetaPair($sheet, $row, 'D', 'E', 'LC Value', number_format((float) $lcBill->lc_value, 2).' '.$currency->code);
+            $row++;
+        }
+
+        if ($lcBill->ci_value !== null) {
+            $this->documentMetaPair($sheet, $row, 'D', 'E', 'CI Value', number_format((float) $lcBill->ci_value, 2).' '.$currency->code);
+            $row++;
+        }
+
+        $row++;
+
+        // ---- Received / paid ledger -----------------------------------------
+        $ledgers = [
+            ['Received ('.$currency->code.')', $lcBill->entries->where('type', EntryType::Received)->values()],
+            ['Paid / Expenses ('.$currency->code.')', $lcBill->entries->where('type', EntryType::Paid)->values()],
+        ];
+
+        foreach ($ledgers as [$heading, $entries]) {
+            $this->documentTableHeader($sheet, $row, [$heading, '', 'Source', 'Rate', 'Amount']);
+            $sheet->mergeCells("A{$row}:B{$row}");
+            $sheet->getStyle("C{$row}:E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $row++;
+
+            $firstEntryRow = $row;
+
+            if ($entries->isEmpty()) {
+                $sheet->mergeCells("A{$row}:E{$row}");
+                $sheet->setCellValue("A{$row}", 'No entries');
+                $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->getColor()->setRGB('94A3B8');
+                $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $row++;
+            }
+
+            foreach ($entries as $index => $entry) {
+                $sheet->setCellValue("A{$row}", $entry->entry_date?->format('d M Y') ?? '—');
+                $sheet->setCellValue("B{$row}", $entry->description);
+                $sheet->setCellValue("C{$row}", $entry->source_amount !== null ? (float) $entry->source_amount : null);
+                $sheet->setCellValue("D{$row}", $entry->source_rate !== null ? (float) $entry->source_rate : null);
+                $sheet->setCellValue("E{$row}", (float) $entry->amount);
+
+                $sheet->getStyle("A{$row}")->getFont()->getColor()->setRGB('64748B');
+                $sheet->getStyle("B{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getStyle("C{$row}:D{$row}")->getFont()->getColor()->setRGB('94A3B8');
+                $sheet->getStyle("E{$row}")->getFont()->setBold(true)->getColor()->setRGB('0F172A');
+                $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($entry->description, 40, 15.0, 20.0));
+
+                if ($index % 2 === 1) {
+                    $sheet->getStyle("A{$row}:E{$row}")->getFill()
+                        ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+                }
+
+                $row++;
+            }
+
+            $lastEntryRow = $row - 1;
+
+            if ($entries->isNotEmpty()) {
+                $sheet->getStyle("C{$firstEntryRow}:C{$lastEntryRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle("D{$firstEntryRow}:D{$lastEntryRow}")->getNumberFormat()->setFormatCode('#,##0.####');
+                $sheet->getStyle("E{$firstEntryRow}:E{$lastEntryRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle("C{$firstEntryRow}:E{$lastEntryRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            }
+
+            $sheet->getStyle("A{$firstEntryRow}:E{$lastEntryRow}")->getBorders()->getBottom()
+                ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('CBD5E1');
+
+            $isReceived = str_starts_with($heading, 'Received');
+            $sheet->mergeCells("A{$row}:D{$row}");
+            $sheet->setCellValue("A{$row}", $isReceived ? 'TOTAL RECEIVED' : 'TOTAL PAID');
+            $sheet->setCellValue("E{$row}", $isReceived ? $lcBill->totalReceived() : $lcBill->totalPaid());
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('64748B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("E{$row}")->getFont()->setBold(true)->setSize(11)->getColor()->setRGB('0F172A');
+            $sheet->getStyle("E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("E{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("A{$row}:E{$row}")->getBorders()->getTop()
+                ->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setRGB('1E293B');
+            $row += 2;
+        }
+
+        // ---- Settlement summary -----------------------------------------------
+        $this->documentSectionLabel($sheet, "A{$row}", 'SETTLEMENT');
+        $row++;
+
+        $summary = [
+            ['Total Received', number_format($lcBill->totalReceived(), 2).' '.$currency->code],
+            ['Total Paid', number_format($lcBill->totalPaid(), 2).' '.$currency->code],
+            ['Balance', number_format($lcBill->balance(), 2).' '.$currency->code],
+        ];
+
+        foreach ($summary as $index => [$label, $value]) {
+            $this->documentMetaPair($sheet, $row, 'D', 'E', $label, $value);
+
+            if ($index === count($summary) - 1) {
+                $sheet->getStyle("D{$row}:E{$row}")->getBorders()->getTop()
+                    ->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setRGB('1E293B');
+                $sheet->getStyle("E{$row}")->getFont()->setBold(true)->setSize(13)->getColor()->setRGB('0F172A');
+                $sheet->getRowDimension($row)->setRowHeight(22);
+            }
+
+            $row++;
+        }
+
+        $localDue = $lcBill->localDue();
+
+        if ($localDue !== null) {
+            $this->documentMetaPair(
+                $sheet,
+                $row,
+                'D',
+                'E',
+                'Bank Rate',
+                $lcBill->conversionOperation()->symbol().' '.(float) $lcBill->conversion_rate,
+            );
+            $row++;
+
+            $dueLabel = ($lcBill->is_settled ? 'Settled' : 'Due').' ('.$lcBill->conversionCurrencyCode().')';
+            $sheet->setCellValue("D{$row}", mb_strtoupper($dueLabel));
+            $sheet->getStyle("D{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('1E293B');
+            $sheet->getStyle("D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->setCellValue("E{$row}", $localDue);
+            $sheet->getStyle("E{$row}")->getFont()->setBold(true)->setSize(16)->getColor()->setRGB('0F172A');
+            $sheet->getStyle("E{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle("E{$row}")->getNumberFormat()
+                ->setFormatCode('"'.$lcBill->conversionCurrencySymbol().'"#,##0.00');
+            $sheet->getStyle("D{$row}:E{$row}")->getBorders()->getTop()
+                ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('CBD5E1');
+            $sheet->getRowDimension($row)->setRowHeight(28);
+            $row++;
+        }
+
+        $row = $this->documentSignature($sheet, $row, 'D', 'E', null, null, $companyName);
+
+        $this->finishDocumentWorkbook($sheet, $row, 'E');
+
+        return $this->streamWorkbook($spreadsheet, "lc-bill-{$lcBill->bill_no}.xlsx");
     }
 
     /**

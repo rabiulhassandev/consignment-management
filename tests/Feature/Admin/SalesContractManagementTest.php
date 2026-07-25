@@ -7,6 +7,7 @@ use App\Models\SalesContract;
 use App\Models\SalesContractItem;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class SalesContractManagementTest extends TestCase
@@ -309,5 +310,126 @@ class SalesContractManagementTest extends TestCase
 
         $this->actingAs($staff)->get(route('admin.sales-contracts.index'))->assertForbidden();
         $this->actingAs($staff)->get(route('admin.sales-contracts.print', $salesContract))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.sales-contracts.pdf', $salesContract))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.sales-contracts.excel', $salesContract))->assertForbidden();
+    }
+
+    /**
+     * Flatten every non-empty cell of the generated workbook into a list of string values.
+     *
+     * @return array<int, string>
+     */
+    private function excelCellValues(SalesContract $salesContract): array
+    {
+        $response = $this->get(route('admin.sales-contracts.excel', $salesContract));
+        $response->assertOk();
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'contract-excel-test-');
+        file_put_contents($tempFile, $response->streamedContent());
+
+        $sheet = IOFactory::load($tempFile)->getActiveSheet();
+        $values = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                $value = $cell->getValue();
+
+                if ($value !== null && $value !== '') {
+                    $values[] = (string) $value;
+                }
+            }
+        }
+
+        unlink($tempFile);
+
+        return $values;
+    }
+
+    public function test_excel_download_is_generated(): void
+    {
+        $staff = $this->createStaffUser('sales-contracts.view');
+        $salesContract = SalesContractItem::factory()->create()->salesContract;
+
+        $response = $this->actingAs($staff)->get(route('admin.sales-contracts.excel', $salesContract));
+
+        $response->assertOk();
+        $response->assertHeader(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+        $this->assertStringContainsString(
+            "sales-contract-{$salesContract->contract_no}.xlsx",
+            $response->headers->get('content-disposition'),
+        );
+    }
+
+    public function test_excel_contains_the_printed_contract_details(): void
+    {
+        $staff = $this->createStaffUser('sales-contracts.view');
+        $currency = Currency::factory()->create(['code' => 'CNY', 'name' => 'Chinese Yuan', 'symbol' => '¥']);
+        $salesContract = SalesContract::factory()->create([
+            'contract_no' => 'SC-9012',
+            'buyer' => 'MIL Bangladesh',
+            'buyer_address' => 'House 12, Gulshan, Dhaka',
+            'currency_id' => $currency->id,
+            'freight_charge' => '250.00',
+            'terms' => "Payment by LC at sight.\nShipment within 30 days.",
+        ]);
+        SalesContractItem::factory()->create([
+            'sales_contract_id' => $salesContract->id,
+            'description' => 'Bag Accessories',
+            'hs_code' => '4202.92.00',
+            'quantity' => '500.00',
+            'unit' => 'pcs',
+            'unit_price' => '3.00',
+            'amount' => '1500.00',
+        ]);
+
+        $this->actingAs($staff);
+        $values = $this->excelCellValues($salesContract);
+
+        $this->assertContains('SC-9012', $values);
+        $this->assertContains('MIL Bangladesh', $values);
+        $this->assertContains('House 12, Gulshan, Dhaka', $values);
+        $this->assertContains('Bag Accessories', $values);
+        $this->assertContains('4202.92.00', $values);
+        $this->assertContains('PCS', $values);
+        $this->assertContains('1500', $values);
+        $this->assertContains('FREIGHT CHARGE', $values);
+        $this->assertContains('250', $values);
+        $this->assertContains('TOTAL AMOUNT', $values);
+        $this->assertContains('1750', $values);
+        $this->assertContains('In Words', $values);
+        $this->assertContains($salesContract->amountInWords(), $values);
+        $this->assertContains('TERMS AND CONDITION:', $values);
+        $this->assertContains('Payment by LC at sight.', $values);
+        $this->assertContains('Shipment within 30 days.', $values);
+        $this->assertContains('Seller Confirmation', $values);
+        $this->assertContains('Buyer Confirmation', $values);
+        $this->assertContains('For MIL Bangladesh', $values);
+    }
+
+    public function test_show_page_offers_pdf_and_excel_downloads(): void
+    {
+        $staff = $this->createStaffUser('sales-contracts.view');
+        $salesContract = SalesContractItem::factory()->create()->salesContract;
+
+        $this->actingAs($staff)
+            ->get(route('admin.sales-contracts.show', $salesContract))
+            ->assertOk()
+            ->assertSee(route('admin.sales-contracts.pdf', $salesContract), false)
+            ->assertSee(route('admin.sales-contracts.excel', $salesContract), false);
+    }
+
+    public function test_print_page_includes_share_pdf_wiring(): void
+    {
+        $staff = $this->createStaffUser('sales-contracts.view');
+        $salesContract = SalesContractItem::factory()->create()->salesContract;
+
+        $this->actingAs($staff)
+            ->get(route('admin.sales-contracts.print', $salesContract))
+            ->assertOk()
+            ->assertSee('Share PDF')
+            ->assertSee(str_replace('/', "\/", route('admin.sales-contracts.pdf', $salesContract)), false);
     }
 }

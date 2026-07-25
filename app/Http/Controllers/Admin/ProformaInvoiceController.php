@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\BuildsDocumentWorkbook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreProformaInvoiceRequest;
 use App\Http\Requests\Admin\UpdateProformaInvoiceRequest;
@@ -15,9 +16,15 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProformaInvoiceController extends Controller
 {
+    use BuildsDocumentWorkbook;
+
     /**
      * List proforma invoices with optional search by invoice number or buyer.
      */
@@ -158,6 +165,241 @@ class ProformaInvoiceController extends Controller
         $pdf = Pdf::loadView('admin.proforma-invoices.pdf', $this->invoiceData($proformaInvoice))->setPaper('a4');
 
         return $pdf->download("proforma-invoice-{$proformaInvoice->invoice_no}.pdf");
+    }
+
+    /**
+     * Download the proforma invoice as a styled Excel workbook mirroring the printed document.
+     */
+    public function excel(ProformaInvoice $proformaInvoice): StreamedResponse
+    {
+        $proformaInvoice->load(['currency', 'items']);
+
+        [$spreadsheet, $sheet, $row] = $this->startDocumentWorkbook(
+            'Proforma',
+            'Proforma Invoice '.$proformaInvoice->invoice_no,
+            ['A' => 12, 'B' => 40, 'C' => 15, 'D' => 15, 'E' => 14, 'F' => 20],
+        );
+
+        $currency = $proformaInvoice->currency;
+
+        $sheet->mergeCells("A{$row}:F{$row}");
+        $sheet->setCellValue("A{$row}", 'PROFORMA INVOICE');
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(15)->getColor()->setRGB('0F172A');
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getRowDimension($row)->setRowHeight(24);
+        $row += 2;
+
+        // ---- Exporter / buyer, invoice meta, advising bank ---------------
+        $partiesRow = $row;
+        $this->documentSectionLabel($sheet, "A{$row}", 'EXPORTER');
+        $this->documentMetaPair($sheet, $row, 'D', 'F', 'Invoice No', $proformaInvoice->invoice_no);
+        $row++;
+
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", $proformaInvoice->exporter_name);
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12)->getColor()->setRGB('0F172A');
+        $this->documentMetaPair($sheet, $row, 'D', 'F', 'Date', $proformaInvoice->invoice_date->format('Y/m/d'));
+        $row++;
+
+        if ($proformaInvoice->exporter_address) {
+            $sheet->mergeCells("A{$row}:C{$row}");
+            $sheet->setCellValue("A{$row}", $proformaInvoice->exporter_address);
+            $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($proformaInvoice->exporter_address, 60));
+        }
+
+        $this->documentMetaPair($sheet, $row, 'D', 'F', 'Currency', $currency->code);
+        $row += 2;
+
+        $this->documentSectionLabel($sheet, "A{$row}", 'IMPORTER / BUYER');
+        $row++;
+
+        $sheet->mergeCells("A{$row}:C{$row}");
+        $sheet->setCellValue("A{$row}", $proformaInvoice->buyer_name);
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12)->getColor()->setRGB('0F172A');
+        $row++;
+
+        if ($proformaInvoice->buyer_address) {
+            $sheet->mergeCells("A{$row}:C{$row}");
+            $sheet->setCellValue("A{$row}", $proformaInvoice->buyer_address);
+            $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($proformaInvoice->buyer_address, 60));
+            $row++;
+        }
+
+        $sheet->getStyle("A{$partiesRow}:F".($row - 1))->getBorders()->getBottom()
+            ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('CBD5E1');
+        $row++;
+
+        if ($proformaInvoice->hasAdvisingBankDetails()) {
+            $this->documentSectionLabel($sheet, "A{$row}", "EXPORTER'S LC ADVISING BANK");
+            $row++;
+
+            $bankRows = array_filter([
+                'Bank' => $proformaInvoice->advising_bank_name,
+                'Address' => $proformaInvoice->advising_bank_address,
+                'SWIFT Code' => $proformaInvoice->advising_bank_swift,
+                'Beneficiary Name' => $proformaInvoice->beneficiary_name,
+                'Beneficiary A/C' => $proformaInvoice->beneficiary_account,
+            ]);
+
+            foreach ($bankRows as $label => $value) {
+                $sheet->setCellValue("A{$row}", $label);
+                $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+                $sheet->mergeCells("B{$row}:F{$row}");
+                $sheet->setCellValue("B{$row}", $value);
+                $sheet->getStyle("B{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('1E293B');
+                $sheet->getStyle("B{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($value, 95));
+                $row++;
+            }
+
+            $row++;
+        }
+
+        // ---- Shipping routing + delivery terms ----------------------------
+        $shipping = array_filter([
+            'Pre-Carriage' => $proformaInvoice->pre_carriage,
+            'Place of Receipt' => $proformaInvoice->place_of_receipt,
+            'Country of Origin' => $proformaInvoice->country_of_origin,
+            'Port of Loading' => $proformaInvoice->port_of_loading,
+            'Port of Discharge' => $proformaInvoice->port_of_discharge,
+            'Final Destination' => $proformaInvoice->final_destination,
+        ]);
+
+        if ($shipping !== [] || $proformaInvoice->delivery_payment_terms) {
+            $this->documentSectionLabel($sheet, "A{$row}", 'SHIPPING & DELIVERY');
+            $row++;
+
+            foreach ($shipping as $label => $value) {
+                $sheet->mergeCells("A{$row}:B{$row}");
+                $sheet->setCellValue("A{$row}", $label);
+                $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+                $sheet->mergeCells("C{$row}:F{$row}");
+                $sheet->setCellValue("C{$row}", $value);
+                $sheet->getStyle("C{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('1E293B');
+                $row++;
+            }
+
+            if ($proformaInvoice->delivery_payment_terms) {
+                $sheet->mergeCells("A{$row}:B{$row}");
+                $sheet->setCellValue("A{$row}", 'Terms of Delivery and Payment');
+                $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+                $sheet->mergeCells("C{$row}:F{$row}");
+                $sheet->setCellValue("C{$row}", mb_strtoupper($proformaInvoice->delivery_payment_terms));
+                $sheet->getStyle("C{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('1E293B');
+                $sheet->getStyle("C{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($proformaInvoice->delivery_payment_terms, 80));
+                $row++;
+            }
+
+            $row++;
+        }
+
+        // ---- Description of goods -----------------------------------------
+        $amountHeading = 'Total Amount ('.$currency->code.')'
+            .($proformaInvoice->incoterm ? ' '.$proformaInvoice->incoterm : '');
+
+        $this->documentTableHeader($sheet, $row, [
+            'Mark',
+            'Description of Goods',
+            'H.S. Code No.',
+            'Quantity',
+            'Rate ('.$currency->code.')',
+            $amountHeading,
+        ]);
+        $sheet->getStyle("A{$row}:A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle("C{$row}:F{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        $firstItemRow = $row;
+
+        foreach ($proformaInvoice->items as $index => $item) {
+            $sheet->setCellValue("A{$row}", $index === 0 ? $proformaInvoice->mark : null);
+            $sheet->setCellValue("B{$row}", $item->description);
+            $sheet->setCellValue("C{$row}", $item->hs_code);
+            $sheet->setCellValue("D{$row}", $item->quantityLabel());
+            $sheet->setCellValue("E{$row}", $item->rate !== null ? (float) $item->rate : null);
+            $sheet->setCellValue("F{$row}", (float) $item->amount);
+
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('1E293B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("B{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_CENTER);
+            $sheet->getStyle("C{$row}:D{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle("C{$row}:D{$row}")->getFont()->getColor()->setRGB('64748B');
+            $sheet->getStyle("F{$row}")->getFont()->setBold(true)->getColor()->setRGB('0F172A');
+            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($item->description, 40, 15.0, 20.0));
+
+            if ($index % 2 === 1) {
+                $sheet->getStyle("A{$row}:F{$row}")->getFill()
+                    ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+            }
+
+            $row++;
+        }
+
+        $lastItemRow = $row - 1;
+
+        if ($lastItemRow >= $firstItemRow) {
+            $sheet->getStyle("E{$firstItemRow}:F{$lastItemRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle("E{$firstItemRow}:F{$lastItemRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+            $sheet->getStyle("A{$firstItemRow}:F{$lastItemRow}")->getBorders()->getBottom()
+                ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('CBD5E1');
+        }
+
+        // ---- Total ---------------------------------------------------------
+        $sheet->mergeCells("A{$row}:E{$row}");
+        $sheet->setCellValue("A{$row}", 'TOTAL : SAY '
+            .($proformaInvoice->incoterm ? '('.$proformaInvoice->incoterm.') ' : '')
+            .mb_strtoupper($currency->name));
+        $sheet->setCellValue("F{$row}", $proformaInvoice->totalAmount());
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('64748B');
+        $sheet->getStyle("A{$row}")->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("F{$row}")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0F172A');
+        $sheet->getStyle("F{$row}")->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setVertical(Alignment::VERTICAL_CENTER);
+        $sheet->getStyle("F{$row}")->getNumberFormat()->setFormatCode('"'.$currency->symbol.'"#,##0.00');
+        $sheet->getStyle("A{$row}:F{$row}")->getBorders()->getTop()
+            ->setBorderStyle(Border::BORDER_MEDIUM)->getColor()->setRGB('1E293B');
+        $sheet->getRowDimension($row)->setRowHeight(26);
+        $row++;
+
+        $sheet->mergeCells("A{$row}:F{$row}");
+        $sheet->setCellValue("A{$row}", $proformaInvoice->amountInWords());
+        $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(10)->getColor()->setRGB('1E293B');
+        $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true);
+        $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($proformaInvoice->amountInWords(), 110));
+        $row += 2;
+
+        // ---- Declaration ----------------------------------------------------
+        if ($proformaInvoice->declaration) {
+            $this->documentSectionLabel($sheet, "A{$row}", 'DECLARATION');
+            $row++;
+
+            $sheet->mergeCells("A{$row}:F{$row}");
+            $sheet->setCellValue("A{$row}", $proformaInvoice->declaration);
+            $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
+            $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($proformaInvoice->declaration, 110));
+            $row += 2;
+        }
+
+        $row = $this->documentSignature(
+            $sheet,
+            $row,
+            'D',
+            'F',
+            null,
+            null,
+            $proformaInvoice->exporter_name,
+        );
+
+        $this->finishDocumentWorkbook($sheet, $row, 'F');
+
+        return $this->streamWorkbook($spreadsheet, "proforma-invoice-{$proformaInvoice->invoice_no}.xlsx");
     }
 
     /**

@@ -20,6 +20,8 @@
 
         <div class="flex flex-wrap items-center gap-2">
             <x-button variant="secondary" :href="route('admin.lc-bills.print', $lcBill)" target="_blank" icon="printer">Print</x-button>
+            <x-button variant="secondary" :href="route('admin.lc-bills.pdf', $lcBill)" icon="arrow-down-tray">PDF</x-button>
+            <x-button variant="secondary" :href="route('admin.lc-bills.excel', $lcBill)" icon="document-arrow-down">Excel</x-button>
             @can('lc-bills.edit')
                 <x-button variant="secondary" :href="route('admin.lc-bills.edit', $lcBill)" icon="pencil">Edit</x-button>
             @endcan

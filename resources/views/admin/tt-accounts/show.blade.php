@@ -21,6 +21,8 @@
                 <x-button icon="plus" x-data @click="$dispatch('open-modal', 'add-entry')">Add Entry</x-button>
             @endcan
             <x-button variant="secondary" :href="route('admin.tt-accounts.print', $ttAccount)" target="_blank" icon="printer">Print</x-button>
+            <x-button variant="secondary" :href="route('admin.tt-accounts.pdf', $ttAccount)" icon="arrow-down-tray">PDF</x-button>
+            <x-button variant="secondary" :href="route('admin.tt-accounts.excel', $ttAccount)" icon="document-arrow-down">Excel</x-button>
             @can('tt-accounts.edit')
                 <x-button variant="secondary" :href="route('admin.tt-accounts.edit', $ttAccount)" icon="pencil">Edit</x-button>
             @endcan

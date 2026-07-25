@@ -149,6 +149,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('proforma-invoices/{proformaInvoice}/pdf', [Admin\ProformaInvoiceController::class, 'pdf'])
                 ->whereNumber('proformaInvoice')
                 ->name('proforma-invoices.pdf');
+            Route::get('proforma-invoices/{proformaInvoice}/excel', [Admin\ProformaInvoiceController::class, 'excel'])
+                ->whereNumber('proformaInvoice')
+                ->name('proforma-invoices.excel');
         });
 
         Route::middleware('permission:proforma-invoices.create')->group(function () {
@@ -176,6 +179,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('sales-contracts/{salesContract}/pdf', [Admin\SalesContractController::class, 'pdf'])
                 ->whereNumber('salesContract')
                 ->name('sales-contracts.pdf');
+            Route::get('sales-contracts/{salesContract}/excel', [Admin\SalesContractController::class, 'excel'])
+                ->whereNumber('salesContract')
+                ->name('sales-contracts.excel');
         });
 
         Route::middleware('permission:sales-contracts.create')->group(function () {
@@ -203,6 +209,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('lc-bills/{lcBill}/pdf', [Admin\LcBillController::class, 'pdf'])
                 ->whereNumber('lcBill')
                 ->name('lc-bills.pdf');
+            Route::get('lc-bills/{lcBill}/excel', [Admin\LcBillController::class, 'excel'])
+                ->whereNumber('lcBill')
+                ->name('lc-bills.excel');
         });
 
         Route::middleware('permission:lc-bills.create')->group(function () {
@@ -230,6 +239,9 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('tt-accounts/{ttAccount}/pdf', [Admin\TtAccountController::class, 'pdf'])
                 ->whereNumber('ttAccount')
                 ->name('tt-accounts.pdf');
+            Route::get('tt-accounts/{ttAccount}/excel', [Admin\TtAccountController::class, 'excel'])
+                ->whereNumber('ttAccount')
+                ->name('tt-accounts.excel');
         });
 
         Route::middleware('permission:tt-accounts.create')->group(function () {
