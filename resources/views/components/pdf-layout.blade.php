@@ -31,11 +31,8 @@
     // php-svg-lib renders solid fills/strokes only (no gradients), so the rings use solid brand strokes.
     $chevronsSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="66" height="200" viewBox="0 0 66 200" fill="none">'
         .'<polygon points="0,0 50,76 0,152" fill="#27aae1"/><polygon points="0,32 62,114 0,196" fill="#8dc63f"/></svg>';
-    $ringsSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="290" height="270" viewBox="0 0 290 270" fill="none">'
-        .'<circle cx="205" cy="115" r="92" fill="none" stroke="#27aae1" stroke-width="42"/>'
-        .'<circle cx="98" cy="242" r="72" fill="none" stroke="#8dc63f" stroke-width="34"/></svg>';
     $chevronsUri = 'data:image/svg+xml;base64,'.base64_encode($chevronsSvg);
-    $ringsUri = 'data:image/svg+xml;base64,'.base64_encode($ringsSvg);
+    // $ringsUri = 'data:image/svg+xml;base64,'.base64_encode($ringsSvg);
 
     // Break a long tagline onto a second line for the compact letterhead column.
     $taglineHtml = $tagline ? nl2br(e(wordwrap($tagline, 18, "\n", true))) : null;
@@ -64,12 +61,12 @@
         .cjk { font-family: 'cjk', DejaVu Sans, sans-serif; }
 
         .letterhead-row { padding-bottom: 12px; }
-        .company { font-size: 19px; font-weight: bold; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.3px; }
-        .heading { font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
+        .company { font-size: 16px; font-weight: bold; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.3px; }
+        .heading { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
         .tagline { font-size: 13px; color: #94a3b8; line-height: 1.3; }
 
         .chevrons { position: fixed; left: -40px; top: 430px; z-index: -2; }
-        .rings { position: fixed; right: -46px; bottom: -140px; z-index: -1; }
+        /* .rings { position: fixed; right: -46px; bottom: -140px; z-index: -1; } */
 
         .footer { position: fixed; bottom: -146px; left: 0; right: 0; }
         .footer .info { font-size: 9px; color: #64748b; line-height: 1.6; padding-bottom: 5px; }
@@ -79,8 +76,7 @@
 </head>
 <body>
     {{-- Brand decorations (drawn on every page, like the print frame) --}}
-    <img class="chevrons" src="{{ $chevronsUri }}" width="66" height="200" alt="">
-    <img class="rings" src="{{ $ringsUri }}" width="200" height="186" alt="">
+    <img class="chevrons" src="{{ $chevronsUri }}" width="50" height="100" alt="">
 
     {{-- Letterhead --}}
     <table class="letterhead-row">

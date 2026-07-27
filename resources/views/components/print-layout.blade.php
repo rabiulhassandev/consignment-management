@@ -57,7 +57,7 @@
         },
     }">
     {{-- Toolbar (hidden when printing) --}}
-    <div class="sticky top-0 z-10 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-md print:hidden">
+    <div class="sticky top-0 border-b border-gray-200 bg-white/90 px-4 py-3 backdrop-blur-md print:hidden" style="z-index: 100">
         <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
             @if ($backUrl)
                 <x-button variant="ghost" :href="$backUrl">&larr; Back</x-button>

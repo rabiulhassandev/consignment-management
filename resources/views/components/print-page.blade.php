@@ -28,24 +28,10 @@
 
     <div class="relative flex flex-col" :class="letterhead ? 'min-h-[1086px] print:min-h-[296mm]' : 'pb-10'">
         {{-- Brand chevrons (left edge) --}}
-        <div x-show="letterhead" class="pointer-events-none absolute left-0 top-[46%] z-0" aria-hidden="true">
-            <svg width="66" height="200" viewBox="0 0 66 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div x-show="letterhead" class="pointer-events-none absolute left-0 top-1/2 z-0 -translate-y-1/2" aria-hidden="true">
+            <svg width="36" height="109" viewBox="0 0 66 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <polygon points="0,0 50,76 0,152" fill="#27aae1" />
                 <polygon points="0,32 62,114 0,196" fill="#8dc63f" />
-            </svg>
-        </div>
-
-        {{-- Brand rings (bottom-right corner) --}}
-        <div x-show="letterhead" class="pointer-events-none absolute -bottom-14 -right-16 z-0" aria-hidden="true">
-            <svg width="290" height="270" viewBox="0 0 290 270" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="bnoor-ring" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stop-color="#8dc63f" />
-                        <stop offset="1" stop-color="#27aae1" />
-                    </linearGradient>
-                </defs>
-                <circle cx="205" cy="115" r="92" stroke="url(#bnoor-ring)" stroke-width="42" />
-                <circle cx="98" cy="242" r="72" stroke="url(#bnoor-ring)" stroke-width="34" />
             </svg>
         </div>
 
@@ -65,10 +51,10 @@
                         <p class="max-w-44 text-sm font-medium leading-snug tracking-[0.15em] text-gray-400">{{ $tagline }}</p>
                     @endif
                 </div>
-                <p class="whitespace-nowrap pt-3 text-3xl font-semibold uppercase tracking-[0.35em] text-slate-800">{{ $heading }}</p>
+                <p class="whitespace-nowrap pt-3 text-xl font-semibold uppercase tracking-[0.35em] text-slate-800">{{ $heading }}</p>
             </div>
 
-            <p class="mt-3 text-2xl font-extrabold uppercase leading-none tracking-tight text-gray-950">{{ $companyName }}</p>
+            <p class="mt-3 text-lg font-extrabold uppercase leading-none tracking-tight text-gray-950">{{ $companyName }}</p>
             @if ($registrationNo)
                 <p class="mt-1.5 text-[11px] uppercase tracking-[0.15em] text-gray-400">Reg. No. {{ $registrationNo }}</p>
             @endif
