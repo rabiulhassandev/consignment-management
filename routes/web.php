@@ -272,6 +272,8 @@ Route::middleware(['auth', 'approved', 'staff'])
             Route::get('income-expense', [Admin\IncomeExpenseController::class, 'index'])->name('income-expense.index');
             Route::get('income-expense/report', [Admin\IncomeExpenseController::class, 'report'])->name('income-expense.report');
             Route::get('income-expense/report/print', [Admin\IncomeExpenseController::class, 'print'])->name('income-expense.report.print');
+            Route::get('income-expense/report/pdf', [Admin\IncomeExpenseController::class, 'pdf'])->name('income-expense.report.pdf');
+            Route::get('income-expense/report/excel', [Admin\IncomeExpenseController::class, 'excel'])->name('income-expense.report.excel');
             Route::get('transactions', [Admin\TransactionController::class, 'index'])->name('transactions.index');
         });
 
