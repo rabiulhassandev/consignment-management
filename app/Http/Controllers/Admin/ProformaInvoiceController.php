@@ -175,15 +175,15 @@ class ProformaInvoiceController extends Controller
         $proformaInvoice->load(['currency', 'items']);
 
         [$spreadsheet, $sheet, $row] = $this->startDocumentWorkbook(
-            'Proforma',
+            'Proforma Invoice',
             'Proforma Invoice '.$proformaInvoice->invoice_no,
-            ['A' => 12, 'B' => 40, 'C' => 15, 'D' => 15, 'E' => 14, 'F' => 20],
+            ['A' => 12, 'B' => 40, 'C' => 15, 'D' => 15, 'E' => 14, 'F' => 25],
         );
 
         $currency = $proformaInvoice->currency;
 
         $sheet->mergeCells("A{$row}:F{$row}");
-        $sheet->setCellValue("A{$row}", 'PROFORMA INVOICE');
+        // $sheet->setCellValue("A{$row}", 'PROFORMA INVOICE');
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(15)->getColor()->setRGB('0F172A');
         $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension($row)->setRowHeight(24);

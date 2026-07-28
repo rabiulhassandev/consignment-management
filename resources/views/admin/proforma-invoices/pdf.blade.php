@@ -18,10 +18,10 @@
     $head = $cell.' background-color: #f8fafc; font-size: 10px; font-weight: bold; text-align: center;';
 @endphp
 
-<x-pdf-layout heading="Proforma">
-    <p style="text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #0f172a; margin-top: 16px;">
+<x-pdf-layout heading="Proforma Invoice">
+    {{-- <p style="text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; color: #0f172a; margin-top: 16px;">
         Proforma Invoice
-    </p>
+    </p> --}}
 
     {{-- Parties, invoice meta, and advising bank --}}
     <table style="margin-top: 12px; border-collapse: collapse; font-size: 10px;">

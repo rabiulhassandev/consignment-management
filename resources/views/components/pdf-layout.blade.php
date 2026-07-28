@@ -62,7 +62,7 @@
 
         .letterhead-row { padding-bottom: 12px; }
         .company { font-size: 16px; font-weight: bold; text-transform: uppercase; color: #0a0a0a; letter-spacing: 0.3px; }
-        .heading { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
+        .heading { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 8px; color: #1e293b; }
         .tagline { font-size: 13px; color: #94a3b8; line-height: 1.3; }
 
         .chevrons { position: fixed; left: -40px; top: 430px; z-index: -2; }

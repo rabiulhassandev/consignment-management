@@ -10,7 +10,7 @@
     $head = $cell.' background-color: #f8fafc; font-size: 10px; font-weight: bold; text-transform: uppercase; text-align: center;';
 @endphp
 
-<x-pdf-layout heading="Contract">
+<x-pdf-layout heading="Sales Contract">
     {{-- Buyer + contract meta --}}
     <table style="margin-top: 22px; border-collapse: collapse; font-size: 11px;">
         <tr>

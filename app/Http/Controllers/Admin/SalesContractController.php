@@ -176,7 +176,7 @@ class SalesContractController extends Controller
         $salesContract->load(['currency', 'items']);
 
         [$spreadsheet, $sheet, $row] = $this->startDocumentWorkbook(
-            'Contract',
+            'Sales Contract',
             'Sales Contract '.$salesContract->contract_no,
             ['A' => 7, 'B' => 34, 'C' => 14, 'D' => 11, 'E' => 10, 'F' => 14, 'G' => 17],
         );
