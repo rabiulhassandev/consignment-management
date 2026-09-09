@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\EntryType;
 use App\Enums\TtAccountStatus;
+use App\Enums\UserStatus;
+use App\Enums\UserType;
 use App\Http\Controllers\Concerns\BuildsDocumentWorkbook;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreTtAccountRequest;
@@ -17,6 +19,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -66,15 +70,32 @@ class TtAccountController extends Controller
     }
 
     /**
-     * Store a TT account.
+     * Store a TT account, registering the customer first when the form supplied a new one.
      */
     public function store(StoreTtAccountRequest $request): RedirectResponse
     {
-        $ttAccount = TtAccount::create($request->validated());
+        $validated = $request->validated();
+
+        $ttAccount = DB::transaction(function () use ($validated): TtAccount {
+            $customerId = $validated['customer_id'] ?? User::create([
+                'name' => $validated['new_customer_name'],
+                'email' => $validated['new_customer_email'],
+                'password' => $validated['new_customer_password'],
+                'type' => UserType::Customer,
+                'status' => UserStatus::Approved,
+            ])->id;
+
+            return TtAccount::create([
+                ...Arr::only($validated, ['title', 'currency_id', 'opening_balance', 'status']),
+                'customer_id' => $customerId,
+            ]);
+        });
 
         return redirect()
             ->route('admin.tt-accounts.show', $ttAccount)
-            ->with('success', 'TT account created successfully.');
+            ->with('success', $request->createsCustomer()
+                ? "TT account created and {$ttAccount->customer->name} can now log in with the credentials you set."
+                : 'TT account created successfully.');
     }
 
     /**
@@ -138,7 +159,7 @@ class TtAccountController extends Controller
     {
         $pdf = Pdf::loadView('admin.tt-accounts.pdf', $this->statementData($ttAccount))->setPaper('a4');
 
-        return $pdf->download("tt-account-{$ttAccount->id}.pdf");
+        return $pdf->download($ttAccount->downloadFilename('pdf'));
     }
 
     /**
@@ -199,7 +220,7 @@ class TtAccountController extends Controller
 
             if ($entry->source_amount !== null) {
                 $source = trim(($entry->sourceCurrency?->code ?? '').' '.number_format((float) $entry->source_amount, 2))
-                    .($entry->source_rate !== null ? ' @ '.(float) $entry->source_rate : '');
+                    .($entry->source_rate !== null ? ' '.$entry->sourceOperation()->symbol().' '.(float) $entry->source_rate : '');
             }
 
             $description = $entry->description.($source ? "\n".$source : '');
@@ -282,7 +303,7 @@ class TtAccountController extends Controller
 
         $this->finishDocumentWorkbook($sheet, $row, 'F');
 
-        return $this->streamWorkbook($spreadsheet, "tt-account-{$ttAccount->id}.xlsx");
+        return $this->streamWorkbook($spreadsheet, $ttAccount->downloadFilename('xlsx'));
     }
 
     /**

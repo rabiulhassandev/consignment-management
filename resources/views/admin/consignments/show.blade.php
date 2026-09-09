@@ -57,8 +57,8 @@
                                     <td class="px-4 py-3 text-gray-400 sm:px-6">{{ $loop->iteration }}</td>
                                     <td class="px-4 py-3 text-gray-600">{{ $item->purchase_date->format('d M Y') }}</td>
                                     <td class="px-4 py-3 font-medium text-gray-900">{{ $item->product_name }}</td>
-                                    <td class="px-4 py-3"><x-badge>{{ $item->category->name }}</x-badge></td>
-                                    <td class="px-4 py-3 text-gray-600">{{ $item->supplier->name }}</td>
+                                    <td class="px-4 py-3">@if ($item->category)<x-badge>{{ $item->category->name }}</x-badge>@else<span class="text-gray-400">—</span>@endif</td>
+                                    <td class="px-4 py-3 text-gray-600">{{ $item->supplier?->name ?? '—' }}</td>
                                     <td class="px-4 py-3 text-gray-600">{{ $item->sample_number ?? '—' }}</td>
                                     <td class="px-4 py-3 text-gray-600">{{ $item->own_sample_number ?? '—' }}</td>
                                     <td class="px-4 py-3 text-right font-medium text-gray-900 sm:px-6">

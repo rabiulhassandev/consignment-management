@@ -90,7 +90,7 @@
                                         @if ($entry->source_amount !== null)
                                             {{ $entry->sourceCurrency?->symbol }}{{ number_format((float) $entry->source_amount, 2) }}
                                             @if ($entry->source_rate !== null)
-                                                <span class="text-xs text-gray-400">@ {{ (float) $entry->source_rate }}</span>
+                                                <span class="text-xs text-gray-400">{{ $entry->sourceOperation()->symbol() }} {{ (float) $entry->source_rate }}</span>
                                             @endif
                                         @else
                                             —

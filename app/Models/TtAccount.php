@@ -38,6 +38,17 @@ class TtAccount extends Model
     }
 
     /**
+     * The account title as a download filename, e.g. "SPF CHINA TT ACCOUNTS 2026.pdf",
+     * with characters that are illegal in a filename stripped out.
+     */
+    public function downloadFilename(string $extension): string
+    {
+        $name = trim((string) preg_replace('/\s+/u', ' ', (string) preg_replace('/[\\\\\/:*?"<>|\x00-\x1F]/u', '', (string) $this->title)));
+
+        return ($name !== '' ? $name : 'tt-account-'.$this->id).'.'.$extension;
+    }
+
+    /**
      * Statement entries in insertion (id) order — many rows carry no date,
      * so the running balance always follows the order entries were recorded.
      */

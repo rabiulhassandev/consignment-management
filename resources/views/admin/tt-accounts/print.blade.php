@@ -7,6 +7,7 @@
 <x-print-page :title="$ttAccount->title"
               :back-url="route('admin.tt-accounts.show', $ttAccount)"
               :pdf-url="route('admin.tt-accounts.pdf', $ttAccount)"
+              :pdf-filename="$ttAccount->downloadFilename('pdf')"
               heading="Statement">
     {{-- Account + statement meta --}}
     <div class="mt-9 flex items-start justify-between gap-8">
@@ -63,7 +64,7 @@
                         <p class="text-slate-900">{{ $entry->description }}</p>
                         @if ($entry->source_amount !== null)
                             <p class="text-[11px] text-gray-400">
-                                {{ $entry->sourceCurrency?->code ?? '' }} {{ number_format((float) $entry->source_amount, 2) }}@if ($entry->source_rate !== null) @ {{ (float) $entry->source_rate }}@endif
+                                {{ $entry->sourceCurrency?->code ?? '' }} {{ number_format((float) $entry->source_amount, 2) }}@if ($entry->source_rate !== null) {{ $entry->sourceOperation()->symbol() }} {{ (float) $entry->source_rate }}@endif
                             </p>
                         @endif
                     </td>

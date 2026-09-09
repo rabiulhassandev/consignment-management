@@ -53,6 +53,69 @@ class ConsignmentManagementTest extends TestCase
         $this->assertCount(2, $consignment->items);
     }
 
+    public function test_purchase_item_can_be_saved_without_a_category_or_supplier(): void
+    {
+        $staff = $this->createStaffUser('consignments.create', 'consignments.view');
+        $customer = User::factory()->customer()->create();
+        $supplier = Supplier::factory()->for($customer, 'customer')->create();
+        $currency = Currency::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.customers.consignments.store', $customer), [
+            'consignment_no' => 'CN-1001',
+            'consignment_date' => '2026-07-10',
+            'currency_id' => $currency->id,
+            'items' => [
+                $this->itemPayload($supplier, ['category_id' => null, 'supplier_id' => null]),
+            ],
+        ]);
+
+        $consignment = Consignment::query()->where('consignment_no', 'CN-1001')->first();
+
+        $this->assertNotNull($consignment);
+        $response->assertRedirect(route('admin.consignments.show', $consignment));
+
+        $item = $consignment->items->sole();
+
+        $this->assertNull($item->category_id);
+        $this->assertNull($item->supplier_id);
+    }
+
+    public function test_consignment_show_page_renders_items_without_a_category_or_supplier(): void
+    {
+        $staff = $this->createStaffUser('consignments.view');
+        $consignment = Consignment::factory()->create();
+
+        PurchaseItem::factory()->create([
+            'consignment_id' => $consignment->id,
+            'product_name' => 'Cotton twill fabric',
+            'category_id' => null,
+            'supplier_id' => null,
+        ]);
+
+        $this->actingAs($staff)
+            ->get(route('admin.consignments.show', $consignment))
+            ->assertOk()
+            ->assertSee('Cotton twill fabric');
+    }
+
+    public function test_purchase_item_still_rejects_a_supplier_from_another_customer(): void
+    {
+        $staff = $this->createStaffUser('consignments.create');
+        $customer = User::factory()->customer()->create();
+        $currency = Currency::factory()->create();
+        $foreignSupplier = Supplier::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.customers.consignments.store', $customer), [
+            'consignment_no' => 'CN-1002',
+            'consignment_date' => '2026-07-10',
+            'currency_id' => $currency->id,
+            'items' => [$this->itemPayload($foreignSupplier)],
+        ]);
+
+        $response->assertSessionHasErrors('items.0.supplier_id');
+        $this->assertSame(0, Consignment::count());
+    }
+
     public function test_consignment_requires_at_least_one_item(): void
     {
         $staff = $this->createStaffUser('consignments.create');

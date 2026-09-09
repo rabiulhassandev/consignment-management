@@ -37,7 +37,7 @@
                                         <td class="px-4 py-3 font-medium text-gray-900 sm:px-6">{{ $item->sample_number ?? '—' }}</td>
                                         <td class="px-4 py-3 text-gray-600">{{ $item->own_sample_number ?? '—' }}</td>
                                         <td class="px-4 py-3 text-gray-600">{{ $item->product_name }}</td>
-                                        <td class="px-4 py-3 text-gray-600">{{ $item->supplier->name }}</td>
+                                        <td class="px-4 py-3 text-gray-600">{{ $item->supplier?->name ?? '—' }}</td>
                                         <td class="px-4 py-3">
                                             <a href="{{ route('admin.customers.show', $item->consignment->customer) }}" class="text-indigo-600 hover:text-indigo-700">
                                                 {{ $item->consignment->customer->name }}

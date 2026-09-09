@@ -30,9 +30,9 @@ class StoreConsignmentRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.purchase_date' => ['required', 'date'],
             'items.*.product_name' => ['required', 'string', 'max:255'],
-            'items.*.category_id' => ['required', Rule::exists('categories', 'id')],
+            'items.*.category_id' => ['nullable', Rule::exists('categories', 'id')],
             'items.*.supplier_id' => [
-                'required',
+                'nullable',
                 Rule::exists('suppliers', 'id')->where('customer_id', $this->route('customer')->id),
             ],
             'items.*.sample_number' => ['nullable', 'string', 'max:100'],

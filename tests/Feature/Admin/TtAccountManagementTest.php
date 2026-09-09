@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Enums\ConversionOperation;
 use App\Enums\EntryType;
 use App\Models\Currency;
 use App\Models\TtAccount;
 use App\Models\TtAccountEntry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
@@ -57,6 +59,98 @@ class TtAccountManagementTest extends TestCase
         $response->assertRedirect(route('admin.tt-accounts.show', $ttAccount));
         $this->assertSame($customer->id, $ttAccount->customer_id);
         $this->assertSame('100.00', $ttAccount->opening_balance);
+    }
+
+    public function test_staff_can_open_an_account_for_a_brand_new_customer(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.create', 'tt-accounts.view', 'customers.create');
+        $currency = Currency::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.tt-accounts.store'), [
+            'customer_mode' => 'new',
+            'new_customer_name' => 'MIL Bangladesh',
+            'new_customer_email' => 'accounts@mil-bd.test',
+            'new_customer_password' => 'sup3r-secret-pass',
+            'title' => 'SPF CHINA TT ACCOUNTS 2026',
+            'currency_id' => $currency->id,
+            'opening_balance' => null,
+            'status' => 'open',
+        ]);
+
+        $customer = User::query()->where('email', 'accounts@mil-bd.test')->first();
+        $ttAccount = TtAccount::query()->where('title', 'SPF CHINA TT ACCOUNTS 2026')->first();
+
+        $this->assertNotNull($customer);
+        $this->assertNotNull($ttAccount);
+        $response->assertRedirect(route('admin.tt-accounts.show', $ttAccount));
+        $this->assertTrue($customer->isCustomer());
+        $this->assertTrue($customer->isApproved());
+        $this->assertTrue(Hash::check('sup3r-secret-pass', $customer->password));
+        $this->assertSame($customer->id, $ttAccount->customer_id);
+    }
+
+    public function test_new_customer_details_are_validated(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.create', 'customers.create');
+        $existing = User::factory()->customer()->create(['email' => 'taken@mil-bd.test']);
+        $currency = Currency::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.tt-accounts.store'), [
+            'customer_mode' => 'new',
+            'new_customer_name' => '',
+            'new_customer_email' => $existing->email,
+            'new_customer_password' => 'short',
+            'title' => 'SPF CHINA TT ACCOUNTS 2026',
+            'currency_id' => $currency->id,
+            'status' => 'open',
+        ]);
+
+        $response->assertSessionHasErrors(['new_customer_name', 'new_customer_email', 'new_customer_password']);
+        $this->assertSame(0, TtAccount::count());
+        $this->assertSame(1, User::customers()->count());
+    }
+
+    public function test_creating_a_customer_inline_requires_the_customer_create_permission(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.create');
+        $currency = Currency::factory()->create();
+
+        $response = $this->actingAs($staff)->post(route('admin.tt-accounts.store'), [
+            'customer_mode' => 'new',
+            'new_customer_name' => 'MIL Bangladesh',
+            'new_customer_email' => 'accounts@mil-bd.test',
+            'new_customer_password' => 'sup3r-secret-pass',
+            'title' => 'SPF CHINA TT ACCOUNTS 2026',
+            'currency_id' => $currency->id,
+            'status' => 'open',
+        ]);
+
+        $response->assertForbidden();
+        $this->assertSame(0, TtAccount::count());
+        $this->assertNull(User::query()->where('email', 'accounts@mil-bd.test')->first());
+    }
+
+    public function test_create_form_offers_the_new_customer_fields(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.create', 'customers.create');
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.create'))
+            ->assertOk()
+            ->assertSee('New customer')
+            ->assertSee('new_customer_name')
+            ->assertSee('new_customer_email')
+            ->assertSee('new_customer_password');
+    }
+
+    public function test_create_form_hides_the_new_customer_fields_without_the_permission(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.create');
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.create'))
+            ->assertOk()
+            ->assertDontSee('new_customer_name');
     }
 
     public function test_customer_must_be_a_registered_customer(): void
@@ -110,6 +204,85 @@ class TtAccountManagementTest extends TestCase
         $this->assertSame('134810.00', $entry->source_amount);
         $this->assertSame('18.0000', $entry->source_rate);
         $this->assertSame('7489.44', $entry->amount);
+    }
+
+    public function test_conversion_entry_defaults_to_multiplying_by_the_rate(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.edit');
+        $ttAccount = TtAccount::factory()->create();
+
+        $this->actingAs($staff)->post(route('admin.tt-accounts.entries.store', $ttAccount), $this->entryPayload([
+            'source_amount' => '100',
+            'source_rate' => '18',
+            'amount' => '1800',
+        ]));
+
+        $this->assertSame(ConversionOperation::Multiply, $ttAccount->entries->sole()->source_operation);
+    }
+
+    public function test_conversion_entry_can_divide_by_the_rate(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.edit');
+        $ttAccount = TtAccount::factory()->create();
+
+        $this->actingAs($staff)->post(route('admin.tt-accounts.entries.store', $ttAccount), $this->entryPayload([
+            'source_amount' => '134810',
+            'source_rate' => '18',
+            'source_operation' => 'divide',
+            'amount' => '7489.44',
+        ]));
+
+        $entry = $ttAccount->entries->sole();
+
+        $this->assertSame(ConversionOperation::Divide, $entry->source_operation);
+        $this->assertSame('÷', $entry->sourceOperation()->symbol());
+    }
+
+    public function test_entry_conversion_operation_can_be_changed_on_edit(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.edit');
+        $entry = TtAccountEntry::factory()->converted()->create();
+        $ttAccount = $entry->ttAccount;
+
+        $this->actingAs($staff)->put(
+            route('admin.tt-accounts.entries.update', [$ttAccount, $entry]),
+            $this->entryPayload([
+                'type' => 'received',
+                'source_currency_id' => $entry->source_currency_id,
+                'source_amount' => '100',
+                'source_rate' => '18',
+                'source_operation' => 'multiply',
+                'amount' => '1800',
+            ]),
+        );
+
+        $this->assertSame(ConversionOperation::Multiply, $entry->refresh()->source_operation);
+    }
+
+    public function test_entry_rejects_an_unknown_conversion_operation(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.edit');
+        $ttAccount = TtAccount::factory()->create();
+
+        $this->actingAs($staff)
+            ->post(
+                route('admin.tt-accounts.entries.store', $ttAccount),
+                $this->entryPayload(['source_operation' => 'modulo']),
+            )
+            ->assertSessionHasErrors('source_operation');
+
+        $this->assertSame(0, TtAccountEntry::count());
+    }
+
+    public function test_statement_shows_the_conversion_operator(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $entry = TtAccountEntry::factory()->converted()->create();
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.show', $entry->ttAccount))
+            ->assertOk()
+            ->assertSee('÷ 18', false);
     }
 
     public function test_entry_update_and_delete_are_scoped_to_the_account(): void
@@ -245,9 +418,43 @@ class TtAccountManagementTest extends TestCase
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         );
         $this->assertStringContainsString(
-            "tt-account-{$ttAccount->id}.xlsx",
+            "{$ttAccount->title}.xlsx",
             $response->headers->get('content-disposition'),
         );
+    }
+
+    public function test_downloads_are_named_after_the_account_title(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $ttAccount = TtAccount::factory()->create(['title' => 'SPF CHINA TT ACCOUNTS 2026']);
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.pdf', $ttAccount))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename="SPF CHINA TT ACCOUNTS 2026.pdf"');
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.excel', $ttAccount))
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename="SPF CHINA TT ACCOUNTS 2026.xlsx"');
+    }
+
+    public function test_download_filename_strips_characters_illegal_in_a_filename(): void
+    {
+        $ttAccount = TtAccount::factory()->create(['title' => 'SPF/CHINA: "TT" ACCOUNTS?']);
+
+        $this->assertSame('SPFCHINA TT ACCOUNTS.pdf', $ttAccount->downloadFilename('pdf'));
+    }
+
+    public function test_share_pdf_uses_the_account_title_as_filename(): void
+    {
+        $staff = $this->createStaffUser('tt-accounts.view');
+        $ttAccount = TtAccount::factory()->create(['title' => 'SPF CHINA TT ACCOUNTS 2026']);
+
+        $this->actingAs($staff)
+            ->get(route('admin.tt-accounts.print', $ttAccount))
+            ->assertOk()
+            ->assertSee("const filename = 'SPF CHINA TT ACCOUNTS 2026.pdf'", false);
     }
 
     public function test_excel_contains_the_printed_statement_and_running_balance(): void
