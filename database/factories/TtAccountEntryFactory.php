@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ConversionOperation;
 use App\Enums\EntryType;
 use App\Models\Currency;
 use App\Models\TtAccount;
@@ -29,6 +30,7 @@ class TtAccountEntryFactory extends Factory
             'source_currency_id' => null,
             'source_amount' => null,
             'source_rate' => null,
+            'source_operation' => ConversionOperation::Multiply,
             'remarks' => null,
         ];
     }
@@ -63,6 +65,7 @@ class TtAccountEntryFactory extends Factory
             'source_currency_id' => Currency::factory(),
             'source_amount' => '134810.00',
             'source_rate' => '18',
+            'source_operation' => ConversionOperation::Divide,
             'amount' => '7489.44',
         ]);
     }

@@ -42,8 +42,8 @@
 
     @if ($suppliers->isEmpty())
         <div class="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-            This customer has no suppliers yet. Purchase items require a supplier —
-            <a href="{{ route('admin.customers.show', $customer) }}" class="font-semibold underline">add suppliers on the customer profile</a> first.
+            This customer has no suppliers yet. Purchase items can still be saved without one —
+            <a href="{{ route('admin.customers.show', $customer) }}" class="font-semibold underline">add suppliers on the customer profile</a> when you need one.
         </div>
     @endif
 
@@ -113,22 +113,22 @@
                                        class="block w-full rounded-lg border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600">
                             </div>
                             <div>
-                                <label :for="`item-${index}-category`" class="mb-1.5 block text-sm font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+                                <label :for="`item-${index}-category`" class="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
                                 <select :id="`item-${index}-category`" :name="`items[${index}][category_id]`"
-                                        x-model="item.category_id" required
+                                        x-model="item.category_id"
                                         class="block w-full rounded-lg border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600">
-                                    <option value="">Select category</option>
+                                    <option value="">No category</option>
                                     @foreach ($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div>
-                                <label :for="`item-${index}-supplier`" class="mb-1.5 block text-sm font-medium text-gray-700">Supplier <span class="text-red-500">*</span></label>
+                                <label :for="`item-${index}-supplier`" class="mb-1.5 block text-sm font-medium text-gray-700">Supplier</label>
                                 <select :id="`item-${index}-supplier`" :name="`items[${index}][supplier_id]`"
-                                        x-model="item.supplier_id" required
+                                        x-model="item.supplier_id"
                                         class="block w-full rounded-lg border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600">
-                                    <option value="">Select supplier</option>
+                                    <option value="">No supplier</option>
                                     @foreach ($suppliers as $supplier)
                                         <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
                                     @endforeach

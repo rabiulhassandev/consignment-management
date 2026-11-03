@@ -1,4 +1,4 @@
-@props(['title' => null, 'backUrl' => null, 'flush' => false, 'pdfUrl' => null])
+@props(['title' => null, 'backUrl' => null, 'flush' => false, 'pdfUrl' => null, 'pdfFilename' => null])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -44,7 +44,7 @@
                 const response = await fetch({{ Js::from($pdfUrl) }});
                 if (! response.ok) { throw new Error('PDF download failed'); }
                 const blob = await response.blob();
-                const filename = {{ Js::from(($title ? \Illuminate\Support\Str::slug($title) : 'document').'.pdf') }};
+                const filename = {{ Js::from($pdfFilename ?? (($title ? \Illuminate\Support\Str::slug($title) : 'document').'.pdf')) }};
                 const file = new File([blob], filename, { type: 'application/pdf' });
                 await navigator.share({ files: [file], title: {{ Js::from($title ?? 'Document') }} });
             } catch (error) {

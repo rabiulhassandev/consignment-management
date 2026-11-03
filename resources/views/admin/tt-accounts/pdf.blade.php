@@ -64,7 +64,7 @@
                         <span style="color: #0f172a;">{{ $entry->description }}</span>
                         @if ($entry->source_amount !== null)
                             <br><span class="muted" style="font-size: 9px;">
-                                {{ $entry->sourceCurrency?->code ?? '' }} {{ number_format((float) $entry->source_amount, 2) }}@if ($entry->source_rate !== null) @ {{ (float) $entry->source_rate }}@endif
+                                {{ $entry->sourceCurrency?->code ?? '' }} {{ number_format((float) $entry->source_amount, 2) }}@if ($entry->source_rate !== null) {{ $entry->sourceOperation()->symbol() }} {{ (float) $entry->source_rate }}@endif
                             </span>
                         @endif
                     </td>
