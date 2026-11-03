@@ -1,28 +1,23 @@
 @php
     $companyName = \App\Models\Setting::get('company_name') ?: \App\Models\Setting::get('site_name', 'BNoor Group');
-    $bankName = \App\Models\Setting::get('bank_name');
-    $bankAccountName = \App\Models\Setting::get('bank_account_name');
-    $bankAccountNumber = \App\Models\Setting::get('bank_account_number');
-    $bankBranch = \App\Models\Setting::get('bank_branch');
-    $bankSwiftCode = \App\Models\Setting::get('bank_swift_code');
-    $bankRoutingNumber = \App\Models\Setting::get('bank_routing_number');
+    $bankRows = $invoice->printedPaymentDetails();
     $paymentTerms = \App\Models\Setting::get('invoice_payment_terms');
     $terms = \App\Models\Setting::get('invoice_terms');
     $signatoryName = \App\Models\Setting::get('invoice_signatory_name');
     $signatoryDesignation = \App\Models\Setting::get('invoice_signatory_designation');
     $footerNote = \App\Models\Setting::get('invoice_footer_note');
-    $hasBankDetails = $bankName || $bankAccountName || $bankAccountNumber || $bankBranch || $bankSwiftCode || $bankRoutingNumber;
+    $billToAddress = $invoice->billToAddress();
 @endphp
 
-<x-print-page :title="'Invoice '.$invoice->invoice_no" :back-url="route('admin.invoices.show', $invoice)" :pdf-url="route('admin.invoices.pdf', $invoice)" heading="Invoice">
+<x-print-page :title="'Invoice '.$invoice->invoice_no" :back-url="route('admin.invoices.show', $invoice)" :pdf-url="route('admin.invoices.pdf', $invoice)" heading="Invoice" :watermark="true">
     {{-- Billed to + invoice meta --}}
     <div class="mt-9 flex items-start justify-between gap-8">
         <div class="flex items-start gap-4">
             <p class="pt-1 text-[13px] font-semibold uppercase tracking-[0.2em] text-gray-400">Billed To</p>
             <div>
-                <p class="text-2xl font-bold tracking-tight text-slate-900">{{ $invoice->bill_to }}</p>
-                @if ($invoice->bill_to_address)
-                    <p class="mt-1 max-w-xs whitespace-pre-line text-[13px] leading-relaxed text-gray-500">{{ $invoice->bill_to_address }}</p>
+                <p class="text-2xl font-bold tracking-tight text-slate-900">{{ $invoice->billToName() }}</p>
+                @if ($billToAddress)
+                    <p class="mt-1 max-w-xs whitespace-pre-line text-[13px] leading-relaxed text-gray-500">{{ $billToAddress }}</p>
                 @endif
             </div>
         </div>
@@ -79,14 +74,47 @@
                     {{ $invoice->currency->symbol }}{{ number_format((float) $totalAmount, 2) }}
                 </span>
             </div>
-            <p class="mt-2 text-right text-xs text-gray-400">
-                Amount in {{ $invoice->currency->name }} ({{ $invoice->currency->code }}) only
-            </p>
             @if ($paymentTerms)
-                <p class="mt-1 text-right text-xs font-medium text-slate-600">{{ $paymentTerms }}</p>
+                <p class="mt-2 text-right text-xs font-medium text-slate-600">{{ $paymentTerms }}</p>
             @endif
         </div>
     </div>
+
+    {{-- Amount in words --}}
+    <div class="mt-5 flex items-baseline gap-4 text-[13px]">
+        <span class="shrink-0 font-bold uppercase tracking-[0.15em] text-gray-400">In Words</span>
+        <span class="font-medium text-slate-900">{{ $amountInWords }}</span>
+    </div>
+
+    {{-- Customer account summary, shown only when the wallet is in play --}}
+    @if ($invoice->hasWalletActivity())
+        <div class="mt-6 flex justify-end">
+            <table class="w-88 text-[13px]">
+                <tbody>
+                    <tr>
+                        <td class="py-1 text-gray-500">Previous Balance</td>
+                        <td class="py-1 text-right tabular-nums text-slate-800">{{ number_format($openingBalance, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 text-gray-500">Amount Received</td>
+                        <td class="py-1 text-right tabular-nums text-slate-800">{{ number_format($invoice->receivedAmount(), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 text-gray-500">This Invoice</td>
+                        <td class="py-1 text-right tabular-nums text-slate-800">({{ number_format((float) $totalAmount, 2) }})</td>
+                    </tr>
+                    <tr class="border-t border-slate-800">
+                        <td class="pt-2 text-xs font-semibold uppercase tracking-[0.15em] text-gray-500">
+                            {{ $closingBalance < 0 ? 'Balance Due' : 'Balance In Hand' }} ({{ $invoice->currency->code }})
+                        </td>
+                        <td class="pt-2 text-right text-base font-bold tabular-nums text-slate-900">
+                            {{ number_format(abs($closingBalance), 2) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
 
     {{-- Terms & conditions --}}
     @if ($terms)
@@ -99,26 +127,14 @@
     {{-- Payment details + signature --}}
     <div class="{{ $terms ? 'mt-8' : 'mt-14' }} flex items-end justify-between gap-10 border-t border-gray-200 pt-7">
         <div class="text-[13px] leading-loose text-gray-500">
-            @if ($hasBankDetails)
+            @if ($bankRows !== [])
                 <p class="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Payment Details</p>
-                @if ($bankName)
-                    <p><span class="inline-block w-32">Bank</span><span class="font-medium text-slate-800">{{ $bankName }}</span></p>
-                @endif
-                @if ($bankAccountName)
-                    <p><span class="inline-block w-32">Account Name</span><span class="font-medium text-slate-800">{{ $bankAccountName }}</span></p>
-                @endif
-                @if ($bankAccountNumber)
-                    <p><span class="inline-block w-32">Account No.</span><span class="font-medium text-slate-800">{{ $bankAccountNumber }}</span></p>
-                @endif
-                @if ($bankBranch)
-                    <p><span class="inline-block w-32">Branch</span><span class="font-medium text-slate-800">{{ $bankBranch }}</span></p>
-                @endif
-                @if ($bankSwiftCode)
-                    <p><span class="inline-block w-32">SWIFT / BIC</span><span class="font-medium tabular-nums text-slate-800">{{ $bankSwiftCode }}</span></p>
-                @endif
-                @if ($bankRoutingNumber)
-                    <p><span class="inline-block w-32">Routing No.</span><span class="font-medium tabular-nums text-slate-800">{{ $bankRoutingNumber }}</span></p>
-                @endif
+                @foreach ($bankRows as $label => $value)
+                    <p>
+                        <span class="inline-block w-32">{{ $label }}</span>
+                        <span class="font-medium text-slate-800">{{ $value }}</span>
+                    </p>
+                @endforeach
             @endif
         </div>
         <div class="shrink-0 pb-1 text-center">

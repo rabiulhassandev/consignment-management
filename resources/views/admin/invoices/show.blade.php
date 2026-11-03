@@ -6,7 +6,7 @@
                 <x-badge color="indigo">{{ $invoice->currency->code }}</x-badge>
             </div>
             <p class="mt-1 text-sm text-gray-500">
-                Billed to <span class="font-medium text-gray-700">{{ $invoice->bill_to }}</span>
+                Billed to <span class="font-medium text-gray-700">{{ $invoice->billToName() }}</span>
                 · {{ $invoice->invoice_date->format('d M Y') }}
             </p>
         </div>
@@ -81,4 +81,70 @@
             @endif
         </x-card>
     </div>
+
+    @if ($invoice->hasWalletActivity())
+        <div class="mt-6">
+            <x-card title="Customer Wallet">
+                <x-slot:actions>
+                    <span class="text-xs text-gray-400">{{ $invoice->currency->code }} balance</span>
+                </x-slot:actions>
+
+                <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">Opening Balance</dt>
+                        <dd class="mt-0.5 text-sm font-medium tabular-nums {{ $openingBalance < 0 ? 'text-rose-600' : 'text-gray-800' }}">
+                            {{ number_format($openingBalance, 2) }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">Received</dt>
+                        <dd class="mt-0.5 text-sm font-medium tabular-nums text-emerald-600">
+                            {{ number_format($invoice->receivedAmount(), 2) }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">This Invoice</dt>
+                        <dd class="mt-0.5 text-sm font-medium tabular-nums text-rose-600">
+                            {{ number_format((float) $totalAmount, 2) }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">Closing Balance</dt>
+                        <dd class="mt-0.5 text-base font-semibold tabular-nums {{ $closingBalance < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
+                            {{ number_format($closingBalance, 2) }}
+                        </dd>
+                    </div>
+                </dl>
+                <p class="mt-3 border-t border-gray-100 pt-3 text-xs text-gray-500">
+                    A negative balance is owed by {{ $invoice->billToName() }}; a positive balance is an advance held for them.
+                    Balances are tracked separately per currency.
+                </p>
+            </x-card>
+        </div>
+    @endif
+
+    @php($bankRows = $invoice->printedPaymentDetails())
+
+    @if ($bankRows !== [])
+        <div class="mt-6">
+            <x-card title="Payment Details">
+                <x-slot:actions>
+                    @if ($invoice->hasOwnPaymentDetails())
+                        <x-badge color="indigo">This invoice</x-badge>
+                    @else
+                        <x-badge>Site default</x-badge>
+                    @endif
+                </x-slot:actions>
+
+                <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    @foreach ($bankRows as $label => $value)
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wider text-gray-400">{{ $label }}</dt>
+                            <dd class="mt-0.5 text-sm text-gray-800">{{ $value }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </x-card>
+        </div>
+    @endif
 </x-admin-layout>

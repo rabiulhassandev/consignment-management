@@ -4,6 +4,8 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SettingsTest extends TestCase
@@ -72,6 +74,55 @@ class SettingsTest extends TestCase
         $this->assertStringContainsString('not returnable', (string) Setting::get('invoice_terms'));
         $this->assertSame('Mahbub Rahman', Setting::get('invoice_signatory_name'));
         $this->assertSame('Managing Director', Setting::get('invoice_signatory_designation'));
+    }
+
+    public function test_staff_can_upload_and_remove_the_company_seal(): void
+    {
+        Storage::fake('public');
+        $staff = $this->createStaffUser('settings.manage');
+
+        $this->actingAs($staff)
+            ->put(route('admin.settings.update'), [
+                'site_name' => 'BNoor Group',
+                'site_seal' => UploadedFile::fake()->image('seal.png', 400, 400),
+            ])
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $seal = Setting::get('site_seal');
+
+        $this->assertNotNull($seal);
+        Storage::disk('public')->assertExists($seal);
+
+        $this->actingAs($staff)
+            ->put(route('admin.settings.update'), [
+                'site_name' => 'BNoor Group',
+                'remove_site_seal' => '1',
+            ])
+            ->assertRedirect(route('admin.settings.edit'));
+
+        $this->assertNull(Setting::get('site_seal'));
+    }
+
+    public function test_company_seal_must_be_a_jpg_or_png_image(): void
+    {
+        Storage::fake('public');
+        $staff = $this->createStaffUser('settings.manage');
+
+        $this->actingAs($staff)
+            ->put(route('admin.settings.update'), [
+                'site_name' => 'BNoor Group',
+                'site_seal' => UploadedFile::fake()->create('seal.pdf', 20, 'application/pdf'),
+            ])
+            ->assertSessionHasErrors('site_seal');
+
+        $this->actingAs($staff)
+            ->put(route('admin.settings.update'), [
+                'site_name' => 'BNoor Group',
+                'site_seal' => UploadedFile::fake()->create('seal.svg', 20, 'image/svg+xml'),
+            ])
+            ->assertSessionHasErrors('site_seal');
+
+        $this->assertNull(Setting::get('site_seal'));
     }
 
     public function test_site_name_is_required(): void

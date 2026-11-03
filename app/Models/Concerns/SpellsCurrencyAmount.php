@@ -16,6 +16,14 @@ trait SpellsCurrencyAmount
      */
     protected function spellAmount(float $amount): string
     {
+        return trim($this->spellAmountWords($amount).' '.$this->currency->name).' Only';
+    }
+
+    /**
+     * Spell an amount out in words only, with any cents as a "nn/100" remainder.
+     */
+    protected function spellAmountWords(float $amount): string
+    {
         $whole = (int) floor($amount);
         $fraction = (int) round(($amount - $whole) * 100);
 
@@ -25,6 +33,6 @@ trait SpellsCurrencyAmount
             $words .= ' and '.str_pad((string) $fraction, 2, '0', STR_PAD_LEFT).'/100';
         }
 
-        return trim($words.' '.$this->currency->name).' Only';
+        return $words;
     }
 }
