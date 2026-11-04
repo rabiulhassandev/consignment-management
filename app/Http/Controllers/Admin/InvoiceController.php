@@ -9,7 +9,9 @@ use App\Http\Requests\Admin\UpdateInvoiceRequest;
 use App\Models\Currency;
 use App\Models\Invoice;
 use App\Models\Setting;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -26,19 +28,20 @@ class InvoiceController extends Controller
     use BuildsDocumentWorkbook;
 
     /**
-     * List invoices with optional search by invoice number or bill-to name.
+     * List invoices with optional search by invoice number or customer name.
      */
     public function index(Request $request): View
     {
         $search = $request->string('search')->trim()->toString();
 
-        $invoices = Invoice::with('currency')
+        $invoices = Invoice::with(['currency', 'customer'])
             ->withCount('items')
             ->withSum('items', 'amount')
             ->when($search !== '', fn ($query) => $query->where(
                 fn ($query) => $query
                     ->where('invoice_no', 'like', "%{$search}%")
-                    ->orWhere('bill_to', 'like', "%{$search}%"),
+                    ->orWhere('bill_to', 'like', "%{$search}%")
+                    ->orWhereHas('customer', fn ($query) => $query->where('name', 'like', "%{$search}%")),
             ))
             ->latest('invoice_date')
             ->latest('id')
@@ -54,32 +57,23 @@ class InvoiceController extends Controller
     /**
      * Show the form to create an invoice.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         return view('admin.invoices.create', [
-            'suggestedNumber' => $this->suggestInvoiceNumber(),
-            'currencies' => Currency::active()->orderBy('code')->get(),
+            'nextNumber' => $this->nextInvoiceNumber(),
+            'preselectedCustomerId' => $request->integer('customer'),
+            'paymentDetails' => Invoice::defaultPaymentDetails(),
+            'walletBalances' => Invoice::walletBalancesByCustomer(),
+            ...$this->formData(),
         ]);
     }
 
     /**
-     * Store an invoice and its line items.
+     * Store an invoice and its line items under a generated invoice number.
      */
     public function store(StoreInvoiceRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
-
-        $invoice = DB::transaction(function () use ($validated) {
-            $invoice = Invoice::create(Arr::except($validated, 'items'));
-
-            $invoice->items()->createMany(
-                collect($validated['items'])->values()->map(
-                    fn (array $item, int $index): array => [...Arr::except($item, 'id'), 'sort_order' => $index],
-                ),
-            );
-
-            return $invoice;
-        });
+        $invoice = $this->createInvoice($request->validated());
 
         return redirect()
             ->route('admin.invoices.show', $invoice)
@@ -91,12 +85,7 @@ class InvoiceController extends Controller
      */
     public function show(Invoice $invoice): View
     {
-        $invoice->load(['currency', 'items']);
-
-        return view('admin.invoices.show', [
-            'invoice' => $invoice,
-            'totalAmount' => $invoice->items->sum('amount'),
-        ]);
+        return view('admin.invoices.show', $this->invoiceData($invoice));
     }
 
     /**
@@ -108,7 +97,9 @@ class InvoiceController extends Controller
 
         return view('admin.invoices.edit', [
             'invoice' => $invoice,
-            'currencies' => Currency::active()->orderBy('code')->get(),
+            'paymentDetails' => $invoice->paymentDetails(),
+            'walletBalances' => Invoice::walletBalancesByCustomer($invoice),
+            ...$this->formData(),
         ]);
     }
 
@@ -158,12 +149,7 @@ class InvoiceController extends Controller
      */
     public function print(Invoice $invoice): View
     {
-        $invoice->load(['currency', 'items']);
-
-        return view('admin.invoices.print', [
-            'invoice' => $invoice,
-            'totalAmount' => $invoice->items->sum('amount'),
-        ]);
+        return view('admin.invoices.print', $this->invoiceData($invoice));
     }
 
     /**
@@ -171,12 +157,7 @@ class InvoiceController extends Controller
      */
     public function pdf(Invoice $invoice): Response
     {
-        $invoice->load(['currency', 'items']);
-
-        $pdf = Pdf::loadView('admin.invoices.pdf', [
-            'invoice' => $invoice,
-            'totalAmount' => $invoice->items->sum('amount'),
-        ])->setPaper('a4');
+        $pdf = Pdf::loadView('admin.invoices.pdf', $this->invoiceData($invoice))->setPaper('a4');
 
         return $pdf->download("invoice-{$invoice->invoice_no}.pdf");
     }
@@ -186,7 +167,7 @@ class InvoiceController extends Controller
      */
     public function excel(Invoice $invoice): StreamedResponse
     {
-        $invoice->load(['currency', 'items']);
+        $invoice->load(['currency', 'customer', 'items']);
 
         [$spreadsheet, $sheet, $row] = $this->startDocumentWorkbook(
             'Invoice',
@@ -202,7 +183,7 @@ class InvoiceController extends Controller
         $this->documentMetaPair($sheet, $row, 'C', 'D', 'Invoice No', $invoice->invoice_no);
         $row++;
 
-        $sheet->setCellValue("A{$row}", $invoice->bill_to);
+        $sheet->setCellValue("A{$row}", $invoice->billToName());
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0F172A');
         $sheet->getRowDimension($row)->setRowHeight(20);
         $this->documentMetaPair($sheet, $row, 'C', 'D', 'Issue Date', $invoice->invoice_date->format('d M Y'));
@@ -210,11 +191,11 @@ class InvoiceController extends Controller
 
         $this->documentMetaPair($sheet, $row, 'C', 'D', 'Currency', $currency->code);
 
-        if ($invoice->bill_to_address) {
-            $sheet->setCellValue("A{$row}", $invoice->bill_to_address);
+        if ($billToAddress = $invoice->billToAddress()) {
+            $sheet->setCellValue("A{$row}", $billToAddress);
             $sheet->getStyle("A{$row}")->getFont()->setSize(10)->getColor()->setRGB('64748B');
             $sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
-            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($invoice->bill_to_address, 48));
+            $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($billToAddress, 48));
         }
 
         $row += 2;
@@ -271,9 +252,10 @@ class InvoiceController extends Controller
         $row++;
 
         $sheet->mergeCells("A{$row}:D{$row}");
-        $sheet->setCellValue("A{$row}", 'Amount in '.$currency->name.' ('.$currency->code.') only');
-        $sheet->getStyle("A{$row}")->getFont()->setSize(9)->getColor()->setRGB('94A3B8');
-        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->setCellValue("A{$row}", $invoice->amountInWords());
+        $sheet->getStyle("A{$row}")->getFont()->setSize(9)->getColor()->setRGB('64748B');
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT)->setWrapText(true);
+        $sheet->getRowDimension($row)->setRowHeight($this->wrappedRowHeight($invoice->amountInWords(), 100));
         $row++;
 
         if ($paymentTerms = Setting::get('invoice_payment_terms')) {
@@ -300,14 +282,7 @@ class InvoiceController extends Controller
         }
 
         // ---- Payment details ---------------------------------------------
-        $bankRows = array_filter([
-            'Bank' => Setting::get('bank_name'),
-            'Account Name' => Setting::get('bank_account_name'),
-            'Account No.' => Setting::get('bank_account_number'),
-            'Branch' => Setting::get('bank_branch'),
-            'SWIFT / BIC' => Setting::get('bank_swift_code'),
-            'Routing No.' => Setting::get('bank_routing_number'),
-        ]);
+        $bankRows = $invoice->printedPaymentDetails();
 
         if ($bankRows !== []) {
             $sheet->getStyle("A{$row}:D{$row}")->getBorders()->getTop()
@@ -344,9 +319,74 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Suggest the next invoice number (editable by the admin).
+     * Shared view data for the show, print and PDF documents.
+     *
+     * @return array<string, mixed>
      */
-    private function suggestInvoiceNumber(): string
+    private function invoiceData(Invoice $invoice): array
+    {
+        $invoice->load(['currency', 'customer', 'items']);
+
+        return [
+            'invoice' => $invoice,
+            'totalAmount' => $invoice->totalAmount(),
+            'amountInWords' => $invoice->amountInWords(),
+            'openingBalance' => $invoice->openingWalletBalance(),
+            'closingBalance' => $invoice->closingWalletBalance(),
+        ];
+    }
+
+    /**
+     * Shared dropdown data for the invoice form.
+     *
+     * @return array<string, mixed>
+     */
+    private function formData(): array
+    {
+        return [
+            'currencies' => Currency::active()->orderBy('code')->get(),
+            'customers' => User::customers()->orderBy('name')->get(['id', 'name', 'address']),
+        ];
+    }
+
+    /**
+     * Create the invoice and its line items under a generated number, retrying when a
+     * concurrent create claims the same number first.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function createInvoice(array $validated): Invoice
+    {
+        $attempts = 0;
+
+        while (true) {
+            try {
+                return DB::transaction(function () use ($validated): Invoice {
+                    $invoice = Invoice::create([
+                        ...Arr::except($validated, 'items'),
+                        'invoice_no' => $this->nextInvoiceNumber(),
+                    ]);
+
+                    $invoice->items()->createMany(
+                        collect($validated['items'])->values()->map(
+                            fn (array $item, int $index): array => [...Arr::except($item, 'id'), 'sort_order' => $index],
+                        ),
+                    );
+
+                    return $invoice;
+                });
+            } catch (UniqueConstraintViolationException $exception) {
+                if (++$attempts >= 3) {
+                    throw $exception;
+                }
+            }
+        }
+    }
+
+    /**
+     * The next invoice number. Generated server-side — the admin never supplies it.
+     */
+    private function nextInvoiceNumber(): string
     {
         $next = (Invoice::max('id') ?? 0) + 1;
 

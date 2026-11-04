@@ -28,6 +28,8 @@ class UpdateSettingsRequest extends FormRequest
             'site_phone' => ['nullable', 'string', 'max:50'],
             'site_address' => ['nullable', 'string', 'max:500'],
             'site_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'site_seal' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'remove_site_seal' => ['nullable', 'boolean'],
             'company_name' => ['nullable', 'string', 'max:255'],
             'company_tagline' => ['nullable', 'string', 'max:255'],
             'company_website' => ['nullable', 'string', 'max:255'],

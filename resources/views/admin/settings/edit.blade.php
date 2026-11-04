@@ -63,6 +63,11 @@
                                   :value="$settings['dhaka_office_contact']" placeholder="Name · Phone" />
                 </div>
 
+                <p class="text-xs text-gray-500">
+                    These bank details are the defaults. Each invoice is prefilled with them and can override
+                    them, so editing here only affects invoices that have no account details of their own.
+                </p>
+
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <x-form.input name="bank_name" label="Bank name" :value="$settings['bank_name']" />
                     <x-form.input name="bank_account_name" label="Account name" :value="$settings['bank_account_name']" />
@@ -90,6 +95,28 @@
 
                 <x-form.input name="invoice_footer_note" label="Invoice footer note"
                               :value="$settings['invoice_footer_note']" placeholder="Closing line at the very bottom of printed invoices" />
+
+                <div>
+                    <label for="site_seal" class="mb-1.5 block text-sm font-medium text-gray-700">Company seal</label>
+                    <p class="mb-2 text-xs text-gray-500">
+                        Printed as a faded watermark in the middle of invoice print and PDF documents.
+                        A square transparent PNG works best.
+                    </p>
+                    @if ($settings['site_seal'])
+                        <img src="{{ Storage::url($settings['site_seal']) }}" alt="Company seal"
+                             class="mb-2 h-20 w-20 rounded object-contain">
+                        <label class="mb-2 flex items-center gap-2 text-sm text-gray-600">
+                            <input type="checkbox" name="remove_site_seal" value="1"
+                                   class="size-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                            Remove the current seal
+                        </label>
+                    @endif
+                    <input type="file" name="site_seal" id="site_seal" accept="image/png,image/jpeg"
+                           class="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100">
+                    @error('site_seal')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
 
                 <x-form.textarea name="sales_contract_terms" label="Sales contract terms &amp; conditions"
                                  :value="$settings['sales_contract_terms']" rows="6"
