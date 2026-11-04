@@ -1,5 +1,5 @@
 {{-- Branded full-page document frame: letterhead, brand graphics, and page footer around the document body. --}}
-@props(['title' => null, 'backUrl' => null, 'heading', 'pdfUrl' => null, 'pdfFilename' => null])
+@props(['title' => null, 'backUrl' => null, 'heading', 'pdfUrl' => null, 'pdfFilename' => null, 'watermark' => false])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -13,6 +13,7 @@
     $chinaContact = \App\Models\Setting::get('china_office_contact');
     $dhakaAddress = \App\Models\Setting::get('dhaka_office_address');
     $dhakaContact = \App\Models\Setting::get('dhaka_office_contact');
+    $seal = $watermark ? \App\Models\Setting::get('site_seal') : null;
 @endphp
 
 <x-print-layout :title="$title" :back-url="$backUrl" :pdf-url="$pdfUrl" :pdf-filename="$pdfFilename" :flush="true">
@@ -27,6 +28,13 @@
     </style>
 
     <div class="relative flex flex-col" :class="letterhead ? 'min-h-[1086px] print:min-h-[296mm]' : 'pb-10'">
+        {{-- Company seal watermark (centred, behind the document body) --}}
+        @if ($seal)
+            <div class="pointer-events-none absolute inset-0 z-0 flex items-center justify-center" aria-hidden="true">
+                <img src="{{ Storage::url($seal) }}" alt="" class="size-72 max-w-[60%] object-contain opacity-15">
+            </div>
+        @endif
+
         {{-- Brand chevrons (left edge) --}}
         <div x-show="letterhead" class="pointer-events-none absolute left-0 top-1/2 z-0 -translate-y-1/2" aria-hidden="true">
             <svg width="36" height="109" viewBox="0 0 66 200" fill="none" xmlns="http://www.w3.org/2000/svg">

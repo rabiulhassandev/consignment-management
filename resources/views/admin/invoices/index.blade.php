@@ -14,7 +14,7 @@
               class="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-3 sm:px-6">
             <div class="relative max-w-xs flex-1">
                 <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
-                <input type="search" name="search" value="{{ $search }}" placeholder="Search invoice no or bill to…"
+                <input type="search" name="search" value="{{ $search }}" placeholder="Search invoice no or customer…"
                        class="block w-full rounded-lg border-0 py-2 pl-9 pr-3 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600">
             </div>
             <x-button type="submit" variant="secondary">Filter</x-button>
@@ -29,10 +29,11 @@
                     <thead class="bg-gray-50/75">
                         <tr class="text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                             <th class="px-4 py-3 sm:px-6">Invoice No</th>
-                            <th class="px-4 py-3">Bill To</th>
+                            <th class="px-4 py-3">Customer</th>
                             <th class="px-4 py-3">Date</th>
                             <th class="px-4 py-3">Items</th>
                             <th class="px-4 py-3">Total</th>
+                            <th class="px-4 py-3">Received</th>
                             <th class="px-4 py-3 text-right sm:px-6">Actions</th>
                         </tr>
                     </thead>
@@ -44,12 +45,15 @@
                                         {{ $invoice->invoice_no }}
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 text-gray-600">{{ $invoice->bill_to }}</td>
+                                <td class="px-4 py-3 text-gray-600">{{ $invoice->billToName() }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ $invoice->invoice_date->format('d M Y') }}</td>
                                 <td class="px-4 py-3 text-gray-600">{{ $invoice->items_count }}</td>
                                 <td class="px-4 py-3 font-medium text-gray-900">
                                     {{ $invoice->currency->symbol }}{{ number_format((float) ($invoice->items_sum_amount ?? 0), 2) }}
                                     <span class="text-xs font-normal text-gray-400">{{ $invoice->currency->code }}</span>
+                                </td>
+                                <td class="px-4 py-3 tabular-nums {{ $invoice->receivedAmount() > 0 ? 'font-medium text-emerald-600' : 'text-gray-400' }}">
+                                    {{ number_format($invoice->receivedAmount(), 2) }}
                                 </td>
                                 <td class="px-4 py-3 sm:px-6">
                                     <div class="flex items-center justify-end gap-1">

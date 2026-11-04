@@ -1,5 +1,5 @@
 {{-- Dompdf document frame styled to mirror the on-screen print letterhead as closely as dompdf allows. --}}
-@props(['heading'])
+@props(['heading', 'watermark' => false])
 
 @php
     $siteName = \App\Models\Setting::get('site_name', 'BNoor Group');
@@ -20,6 +20,16 @@
         $logoPath = \Illuminate\Support\Facades\Storage::disk('public')->path($logo);
         if (is_file($logoPath)) {
             $logoUri = 'data:image/'.pathinfo($logoPath, PATHINFO_EXTENSION).';base64,'.base64_encode(file_get_contents($logoPath));
+        }
+    }
+
+    // Company seal watermark, embedded the same way as the logo.
+    $sealUri = null;
+    if ($watermark && ($seal = \App\Models\Setting::get('site_seal'))) {
+        $sealPath = \Illuminate\Support\Facades\Storage::disk('public')->path($seal);
+        if (is_file($sealPath)) {
+            $sealType = strtolower(pathinfo($sealPath, PATHINFO_EXTENSION)) === 'png' ? 'png' : 'jpeg';
+            $sealUri = 'data:image/'.$sealType.';base64,'.base64_encode(file_get_contents($sealPath));
         }
     }
 
@@ -66,6 +76,9 @@
         .tagline { font-size: 13px; color: #94a3b8; line-height: 1.3; }
 
         .chevrons { position: fixed; left: -40px; top: 430px; z-index: -2; }
+        /* Centred on the A4 page: offsets are measured from the @page content box, so
+           (714px content width - 280) / 2 across, and half the seal above the page middle. */
+        .seal { position: fixed; left: 217px; top: 397px; z-index: -1; opacity: 0.14; }
         /* .rings { position: fixed; right: -46px; bottom: -140px; z-index: -1; } */
 
         .footer { position: fixed; bottom: -146px; left: 0; right: 0; }
@@ -77,6 +90,11 @@
 <body>
     {{-- Brand decorations (drawn on every page, like the print frame) --}}
     <img class="chevrons" src="{{ $chevronsUri }}" width="50" height="100" alt="">
+
+    {{-- Company seal watermark, centred behind the document body --}}
+    @if ($sealUri)
+        <img class="seal" src="{{ $sealUri }}" width="280" alt="">
+    @endif
 
     {{-- Letterhead --}}
     <table class="letterhead-row">

@@ -54,6 +54,7 @@ class SettingController extends Controller
         }
 
         $settings['site_logo'] = Setting::get('site_logo');
+        $settings['site_seal'] = Setting::get('site_seal');
 
         return view('admin.settings.edit', [
             'settings' => $settings,
@@ -75,6 +76,12 @@ class SettingController extends Controller
 
         if ($request->hasFile('site_logo')) {
             Setting::set('site_logo', $request->file('site_logo')->store('logos', 'public'));
+        }
+
+        if ($request->hasFile('site_seal')) {
+            Setting::set('site_seal', $request->file('site_seal')->store('seals', 'public'));
+        } elseif ($request->boolean('remove_site_seal')) {
+            Setting::set('site_seal', null);
         }
 
         return redirect()
